@@ -1,0 +1,44 @@
+name: restaurant_menu
+description: Restaurant menu web application
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0" # (Dart 3.9.2 mieści się w tym zakresie)
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.15.0
+  cloud_firestore: ^4.13.0
+  firebase_storage: ^11.5.0
+  firebase_messaging: ^14.7.0
+
+  # State Management
+  provider: ^6.1.0
+
+  # UI
+  google_fonts: ^6.1.0
+  cached_network_image: ^3.3.0
+  flutter_staggered_grid_view: ^0.7.0
+  shimmer: ^3.0.0
+
+  # Utilities
+  intl: ^0.18.1
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.1
+  image_picker_web: ^3.1.1
+
+  # Maps (web implementacja dołączy się federacyjnie)
+  google_maps_flutter: ^2.5.0
+  google_maps_flutter_web: ^0.5.4
+
+  # Icons
+  font_awesome_flutter: ^10.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1

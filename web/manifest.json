@@ -1,0 +1,138 @@
+{
+    "name": "Restaurant Menu",
+    "short_name": "Menu",
+    "description": "Digital restaurant menu with QR code access",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#f5f5f5",
+    "theme_color": "#2C3E50",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "scope": "/",
+    "lang": "en",
+    "dir": "ltr",
+    "categories": ["food", "restaurant", "menu"],
+    "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/Icon-1024.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "screenshots/mobile-1.png",
+            "sizes": "1080x1920",
+            "type": "image/png",
+            "platform": "narrow",
+            "label": "Menu view"
+        },
+        {
+            "src": "screenshots/mobile-2.png",
+            "sizes": "1080x1920",
+            "type": "image/png",
+            "platform": "narrow",
+            "label": "Item detail"
+        },
+        {
+            "src": "screenshots/desktop-1.png",
+            "sizes": "1920x1080",
+            "type": "image/png",
+            "platform": "wide",
+            "label": "Desktop menu"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "View Menu",
+            "short_name": "Menu",
+            "description": "View restaurant menu",
+            "url": "/",
+            "icons": [
+                {
+                    "src": "icons/menu-96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Restaurant Info",
+            "short_name": "Info",
+            "description": "Restaurant information and contact",
+            "url": "/info",
+            "icons": [
+                {
+                    "src": "icons/info-96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Favorites",
+            "short_name": "Favorites",
+            "description": "View favorite items",
+            "url": "/?category=favorites",
+            "icons": [
+                {
+                    "src": "icons/heart-96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "protocol_handlers": [
+        {
+            "protocol": "web+restaurant",
+            "url": "/?item=%s"
+        }
+    ],
+    "share_target": {
+        "action": "/share",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    },
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui",
+        "browser"
+    ],
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "handle_links": "preferred",
+    "launch_handler": {
+        "client_mode": ["navigate-existing", "auto"]
+    },
+    "file_handlers": [
+        {
+            "action": "/import",
+            "accept": {
+                "application/json": [".json"],
+                "text/csv": [".csv"]
+            }
+        }
+    ]
+}

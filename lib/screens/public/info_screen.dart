@@ -15,37 +15,160 @@ class InfoScreen extends StatelessWidget {
     final locale = languageProvider.currentLocale.languageCode;
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(languageProvider.translate('restaurant_info')),
+        backgroundColor: AppTheme.primaryColor,
+        title: Text(
+          languageProvider.translate('restaurant_info'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: AppTheme.responsivePadding(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Restaurant Header
-            _buildRestaurantHeader(context, settingsProvider),
+            // Restaurant Name & Logo
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusRound),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant,
+                      size: 60,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacingL),
+                  Text(
+                    settingsProvider.getRestaurantNameForLocale(locale),
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
 
+            const SizedBox(height: AppTheme.spacingXL),
+            const Divider(),
             const SizedBox(height: AppTheme.spacingXL),
 
             // Contact Section
-            _buildContactSection(context, settingsProvider, languageProvider),
+            _buildSectionTitle(
+              context,
+              languageProvider.translate('contact'),
+              Icons.contact_phone,
+            ),
+            const SizedBox(height: AppTheme.spacingL),
 
-            const SizedBox(height: AppTheme.spacingXL),
+            // Address
+            if (settingsProvider.address.isNotEmpty)
+              _buildContactTile(
+                context,
+                icon: Icons.location_on,
+                title: languageProvider.translate('address'),
+                subtitle: settingsProvider.address,
+                onTap: () => _openMaps(settingsProvider),
+              ),
 
-            // Map Section
-            if (settingsProvider.latitude != null && settingsProvider.longitude != null)
-              _buildMapSection(context, settingsProvider, languageProvider),
+            // Phone
+            if (settingsProvider.phone.isNotEmpty)
+              _buildContactTile(
+                context,
+                icon: Icons.phone,
+                title: languageProvider.translate('phone'),
+                subtitle: settingsProvider.phone,
+                onTap: () => _makePhoneCall(settingsProvider.phone),
+              ),
+
+            // Email
+            if (settingsProvider.email.isNotEmpty)
+              _buildContactTile(
+                context,
+                icon: Icons.email,
+                title: languageProvider.translate('email'),
+                subtitle: settingsProvider.email,
+                onTap: () => _sendEmail(settingsProvider.email),
+              ),
 
             const SizedBox(height: AppTheme.spacingXL),
 
             // Opening Hours
-            _buildOpeningHoursSection(context, settingsProvider, languageProvider, locale),
+            if (settingsProvider.openingHours.isNotEmpty) ...[
+              _buildSectionTitle(
+                context,
+                languageProvider.translate('opening_hours'),
+                Icons.schedule,
+              ),
+              const SizedBox(height: AppTheme.spacingL),
+              _buildOpeningHours(context, settingsProvider, languageProvider),
+              const SizedBox(height: AppTheme.spacingXL),
+            ],
+
+            // Map
+            if (settingsProvider.latitude != null && settingsProvider.longitude != null) ...[
+              _buildSectionTitle(
+                context,
+                languageProvider.translate('location'),
+                Icons.map,
+              ),
+              const SizedBox(height: AppTheme.spacingL),
+              _buildMap(context, settingsProvider),
+              const SizedBox(height: AppTheme.spacingXL),
+            ],
+
+            // Social Media
+            _buildSectionTitle(
+              context,
+              languageProvider.translate('follow_us'),
+              Icons.share,
+            ),
+            const SizedBox(height: AppTheme.spacingL),
+            _buildSocialMedia(context),
 
             const SizedBox(height: AppTheme.spacingXL),
 
-            // Social Media (optional)
-            _buildSocialMediaSection(context, languageProvider),
+            // Additional Info
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppTheme.spacingL),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppTheme.secondaryColor,
+                        ),
+                        const SizedBox(width: AppTheme.spacingM),
+                        Text(
+                          languageProvider.translate('about_us'),
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    Text(
+                      _getAboutUsText(locale),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
             const SizedBox(height: AppTheme.spacingXXL),
           ],
@@ -54,428 +177,270 @@ class InfoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRestaurantHeader(BuildContext context, SettingsProvider settingsProvider) {
-    return Card(
-      elevation: AppTheme.elevationM,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor.withOpacity(0.1),
-              AppTheme.primaryColor.withOpacity(0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: AppTheme.primaryColor,
+          size: 24,
+        ),
+        const SizedBox(width: AppTheme.spacingM),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
           ),
-          borderRadius: BorderRadius.circular(AppTheme.radiusL),
         ),
-        child: Column(
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text(
-                  '🍽️',
-                  style: TextStyle(fontSize: 48),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-            Text(
-              settingsProvider.restaurantName,
-              style: Theme.of(context).textTheme.displaySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppTheme.spacingS),
-            Text(
-              'Fine Dining Experience',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+      ],
+    );
+  }
+
+  Widget _buildContactTile(
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required String subtitle,
+        required VoidCallback onTap,
+      }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(AppTheme.spacingS),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppTheme.radiusRound),
+          ),
+          child: Icon(
+            icon,
+            color: AppTheme.primaryColor,
+          ),
         ),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        trailing: const Icon(
+          Icons.chevron_right,
+          color: AppTheme.textLight,
+        ),
+        onTap: onTap,
       ),
     );
   }
 
-  Widget _buildContactSection(
+  Widget _buildOpeningHours(
       BuildContext context,
       SettingsProvider settingsProvider,
       LanguageProvider languageProvider,
       ) {
+    final days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    final dayNames = [
+      languageProvider.translate('monday'),
+      languageProvider.translate('tuesday'),
+      languageProvider.translate('wednesday'),
+      languageProvider.translate('thursday'),
+      languageProvider.translate('friday'),
+      languageProvider.translate('saturday'),
+      languageProvider.translate('sunday'),
+    ];
+
+    // Get current day
+    final currentDay = DateTime.now().weekday - 1; // 0-6
+
     return Card(
-      elevation: AppTheme.elevationS,
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingL),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              languageProvider.translate('contact'),
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppTheme.spacingL),
+          children: days.asMap().entries.map((entry) {
+            final index = entry.key;
+            final day = entry.value;
+            final hours = settingsProvider.openingHours[day] ?? languageProvider.translate('closed');
+            final isToday = index == currentDay;
 
-            // Address
-            if (settingsProvider.address.isNotEmpty)
-              _buildContactItem(
-                context,
-                Icons.location_on,
-                languageProvider.translate('address'),
-                settingsProvider.address,
-                    () => _openMaps(settingsProvider),
-              ),
-
-            // Phone
-            if (settingsProvider.phone.isNotEmpty)
-              _buildContactItem(
-                context,
-                Icons.phone,
-                languageProvider.translate('phone'),
-                settingsProvider.phone,
-                    () => _makePhoneCall(settingsProvider.phone),
-              ),
-
-            // Email
-            if (settingsProvider.email.isNotEmpty)
-              _buildContactItem(
-                context,
-                Icons.email,
-                languageProvider.translate('email'),
-                settingsProvider.email,
-                    () => _sendEmail(settingsProvider.email),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactItem(
-      BuildContext context,
-      IconData icon,
-      String label,
-      String value,
-      VoidCallback onTap,
-      ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusM),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppTheme.spacingM,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingS),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                color: isToday ? AppTheme.secondaryColor.withOpacity(0.1) : null,
+                borderRadius: BorderRadius.circular(AppTheme.radiusS),
               ),
-              child: Icon(
-                icon,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-            const SizedBox(width: AppTheme.spacingM),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Row(
+                    children: [
+                      if (isToday)
+                        Container(
+                          width: 4,
+                          height: 24,
+                          margin: const EdgeInsets.only(right: AppTheme.spacingM),
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondaryColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      Text(
+                        dayNames[index],
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: isToday ? FontWeight.bold : null,
+                        ),
+                      ),
+                    ],
+                  ),
                   Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.textSecondary,
+                    hours,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: hours == languageProvider.translate('closed')
+                          ? AppTheme.textLight
+                          : AppTheme.textPrimary,
+                      fontWeight: isToday ? FontWeight.bold : null,
                     ),
                   ),
-                  const SizedBox(height: AppTheme.spacingXS),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
                 ],
               ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppTheme.textLight,
-            ),
-          ],
+            );
+          }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildMapSection(
-      BuildContext context,
-      SettingsProvider settingsProvider,
-      LanguageProvider languageProvider,
-      ) {
+  Widget _buildMap(BuildContext context, SettingsProvider settingsProvider) {
     return Card(
-      elevation: AppTheme.elevationS,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingL),
-            child: Text(
-              languageProvider.translate('location'),
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+      clipBehavior: Clip.antiAliasWithSaveLayer,
+      child: InkWell(
+        onTap: () => _openMaps(settingsProvider),
+        child: Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: AppTheme.backgroundColor,
           ),
-          // Map placeholder
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(AppTheme.radiusL),
-                bottomRight: Radius.circular(AppTheme.radiusL),
-              ),
-            ),
-            child: Stack(
-              children: [
-                // Google Maps would go here
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.map,
-                        size: 48,
-                        color: AppTheme.textLight,
+          child: Stack(
+            children: [
+              // Placeholder map image
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.map,
+                      size: 48,
+                      color: AppTheme.textLight,
+                    ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    Text(
+                      'Tap to open in maps',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
                       ),
-                      const SizedBox(height: AppTheme.spacingS),
+                    ),
+                  ],
+                ),
+              ),
+              // Overlay button
+              Positioned(
+                bottom: AppTheme.spacingM,
+                right: AppTheme.spacingM,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingM,
+                    vertical: AppTheme.spacingS,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusRound),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.directions,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: AppTheme.spacingS),
                       Text(
-                        'Map View',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
+                        'Get Directions',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Positioned(
-                  right: AppTheme.spacingM,
-                  bottom: AppTheme.spacingM,
-                  child: FloatingActionButton.small(
-                    onPressed: () => _openMaps(settingsProvider),
-                    backgroundColor: AppTheme.primaryColor,
-                    child: const Icon(Icons.directions),
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialMedia(BuildContext context) {
+    final socialLinks = [
+      {'icon': Icons.facebook, 'color': const Color(0xFF1877F2), 'url': 'https://facebook.com'},
+      {'icon': Icons.camera_alt, 'color': const Color(0xFFE4405F), 'url': 'https://instagram.com'},
+      {'icon': Icons.alternate_email, 'color': const Color(0xFF1DA1F2), 'url': 'https://twitter.com'},
+    ];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: socialLinks.map((link) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingS),
+          child: IconButton(
+            onPressed: () => _launchURL(link['url'] as String),
+            icon: Icon(
+              link['icon'] as IconData,
+              color: link['color'] as Color,
+              size: 32,
             ),
           ),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildOpeningHoursSection(
-      BuildContext context,
-      SettingsProvider settingsProvider,
-      LanguageProvider languageProvider,
-      String locale,
-      ) {
-    final days = locale == 'pl'
-        ? ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela']
-        : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-    final dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-    return Card(
-      elevation: AppTheme.elevationS,
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              languageProvider.translate('opening_hours'),
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-            ...List.generate(days.length, (index) {
-              final hours = settingsProvider.openingHours[dayKeys[index]] ??
-                  languageProvider.translate('closed');
-              final isToday = DateTime.now().weekday == index + 1;
-
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppTheme.spacingS,
-                ),
-                decoration: BoxDecoration(
-                  color: isToday ? AppTheme.primaryColor.withOpacity(0.05) : null,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        if (isToday)
-                          Container(
-                            width: 4,
-                            height: 20,
-                            margin: const EdgeInsets.only(right: AppTheme.spacingS),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        Text(
-                          days[index],
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      hours,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: hours == languageProvider.translate('closed')
-                            ? AppTheme.textSecondary
-                            : AppTheme.textPrimary,
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialMediaSection(BuildContext context, LanguageProvider languageProvider) {
-    return Card(
-      elevation: AppTheme.elevationS,
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              languageProvider.translate('follow_us'),
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildSocialButton(
-                  'Facebook',
-                  Icons.facebook,
-                  Colors.blue,
-                      () => _openUrl('https://facebook.com'),
-                ),
-                _buildSocialButton(
-                  'Instagram',
-                  Icons.camera_alt,
-                  Colors.pink,
-                      () => _openUrl('https://instagram.com'),
-                ),
-                _buildSocialButton(
-                  'Twitter',
-                  Icons.alternate_email,
-                  Colors.lightBlue,
-                      () => _openUrl('https://twitter.com'),
-                ),
-                _buildSocialButton(
-                  'TikTok',
-                  Icons.music_note,
-                  Colors.black,
-                      () => _openUrl('https://tiktok.com'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton(
-      String name,
-      IconData icon,
-      Color color,
-      VoidCallback onPressed,
-      ) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppTheme.radiusM),
-        ),
-        child: Icon(
-          icon,
-          color: color,
-        ),
-      ),
-      tooltip: name,
-    );
+  String _getAboutUsText(String locale) {
+    switch (locale) {
+      case 'pl':
+        return 'Witamy w naszej restauracji! Od ponad 20 lat serwujemy najlepsze dania kuchni międzynarodowej. '
+            'Nasze menu łączy tradycję z nowoczesnością, oferując wyjątkowe doświadczenia kulinarne. '
+            'Zapraszamy do odwiedzenia nas i spróbowania naszych specjalności!';
+      case 'en':
+      default:
+        return 'Welcome to our restaurant! For over 20 years, we have been serving the best international cuisine. '
+            'Our menu combines tradition with modernity, offering exceptional culinary experiences. '
+            'We invite you to visit us and try our specialties!';
+    }
   }
 
   Future<void> _openMaps(SettingsProvider settingsProvider) async {
-    if (settingsProvider.latitude == null || settingsProvider.longitude == null) {
-      // Use address
-      final uri = Uri.parse(
-          'https://maps.google.com/?q=${Uri.encodeComponent(settingsProvider.address)}'
-      );
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
-    } else {
-      // Use coordinates
-      final uri = Uri.parse(
-          'https://maps.google.com/?q=${settingsProvider.latitude},${settingsProvider.longitude}'
-      );
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
-    }
+    if (settingsProvider.latitude == null || settingsProvider.longitude == null) return;
+
+    final url = 'https://maps.google.com/?q=${settingsProvider.latitude},${settingsProvider.longitude}';
+    await _launchURL(url);
   }
 
   Future<void> _makePhoneCall(String phone) async {
-    final uri = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+    final url = 'tel:$phone';
+    await _launchURL(url);
   }
 
   Future<void> _sendEmail(String email) async {
-    final uri = Uri.parse('mailto:$email');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+    final url = 'mailto:$email';
+    await _launchURL(url);
   }
 
-  Future<void> _openUrl(String url) async {
+  Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);

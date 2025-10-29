@@ -29,55 +29,45 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final result = await authService.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+    final authService = Provider.of<AuthService>(context, listen: false);
 
-      if (result.isSuccess) {
-        // Check if user is admin
-        final isAdmin = await authService.isAdmin();
-        if (isAdmin) {
-          // Navigate to admin dashboard
-          if (mounted) {
-            AppRoutes.navigateAndReplace(
-              context,
-              AppRoutes.adminDashboard,
-            );
-          }
-        } else {
-          // Not an admin
-          await authService.signOut();
-          setState(() {
-            _errorMessage = 'Access denied. Admin privileges required.';
-          });
+    final result = await authService.signInWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result.isSuccess) {
+      // Check if user is admin
+      final isAdmin = await authService.isAdmin();
+
+      if (isAdmin) {
+        if (mounted) {
+          AppRoutes.navigateAndReplace(context, AppRoutes.adminDashboard);
         }
       } else {
+        // Not an admin, sign out
+        await authService.signOut();
         setState(() {
-          _errorMessage = result.message;
+          _errorMessage = 'Access denied. Admin privileges required.';
         });
       }
-    } catch (e) {
+    } else {
       setState(() {
-        _errorMessage = 'An error occurred. Please try again.';
+        _errorMessage = result.message;
       });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
@@ -87,227 +77,198 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final isDesktop = AppTheme.isDesktop(context);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.primaryColor,
-              AppTheme.primaryColor.withBlue(100),
-            ],
-          ),
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppTheme.primaryColor,
+        title: Text(
+          languageProvider.translate('admin_login'),
+          style: const TextStyle(color: Colors.white),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: AppTheme.responsivePadding(context),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: isDesktop ? 400 : double.infinity,
-                ),
-                child: Card(
-                  elevation: AppTheme.elevationL,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusXL),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacingXL),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Logo
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.admin_panel_settings,
-                              size: 40,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-
-                          const SizedBox(height: AppTheme.spacingL),
-
-                          // Title
-                          Text(
-                            languageProvider.translate('admin_login'),
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-
-                          const SizedBox(height: AppTheme.spacingXS),
-
-                          Text(
-                            'Access the admin dashboard',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-
-                          const SizedBox(height: AppTheme.spacingXL),
-
-                          // Error message
-                          if (_errorMessage != null)
-                            Container(
-                              padding: const EdgeInsets.all(AppTheme.spacingM),
-                              margin: const EdgeInsets.only(bottom: AppTheme.spacingL),
-                              decoration: BoxDecoration(
-                                color: AppTheme.errorColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                                border: Border.all(
-                                  color: AppTheme.errorColor.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.error_outline,
-                                    color: AppTheme.errorColor,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: AppTheme.spacingS),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppTheme.errorColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          // Email field
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            decoration: InputDecoration(
-                              labelText: languageProvider.translate('email'),
-                              prefixIcon: const Icon(Icons.email_outlined),
-                              hintText: 'admin@restaurant.com',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Please enter a valid email';
-                              }
-                              return null;
-                            },
-                            enabled: !_isLoading,
-                          ),
-
-                          const SizedBox(height: AppTheme.spacingL),
-
-                          // Password field
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _handleLogin(),
-                            decoration: InputDecoration(
-                              labelText: languageProvider.translate('password'),
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                            enabled: !_isLoading,
-                          ),
-
-                          const SizedBox(height: AppTheme.spacingXL),
-
-                          // Login button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                                  : Text(
-                                languageProvider.translate('login'),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: AppTheme.spacingL),
-
-                          // Forgot password link
-                          TextButton(
-                            onPressed: _isLoading ? null : _handleForgotPassword,
-                            child: Text(
-                              'Forgot password?',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                          ),
-
-                          const Divider(height: AppTheme.spacingXL),
-
-                          // Back to menu button
-                          TextButton.icon(
-                            onPressed: () {
-                              AppRoutes.navigateAndReplace(
-                                context,
-                                AppRoutes.menu,
-                              );
-                            },
-                            icon: const Icon(Icons.arrow_back),
-                            label: const Text('Back to Menu'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppTheme.textSecondary,
-                            ),
-                          ),
-                        ],
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: AppTheme.responsivePadding(context),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: isDesktop ? 400 : double.infinity,
+            ),
+            child: Card(
+              elevation: AppTheme.elevationL,
+              child: Padding(
+                padding: const EdgeInsets.all(AppTheme.spacingXL),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo/Icon
+                      const Icon(
+                        Icons.admin_panel_settings,
+                        size: 80,
+                        color: AppTheme.primaryColor,
                       ),
-                    ),
+
+                      const SizedBox(height: AppTheme.spacingXL),
+
+                      // Title
+                      Text(
+                        languageProvider.translate('admin_panel'),
+                        style: Theme.of(context).textTheme.headlineLarge,
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingS),
+
+                      Text(
+                        languageProvider.translate('admin_access_only'),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingXL),
+
+                      // Error Message
+                      if (_errorMessage != null)
+                        Container(
+                          padding: const EdgeInsets.all(AppTheme.spacingM),
+                          margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                            border: Border.all(color: AppTheme.errorColor),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppTheme.errorColor,
+                              ),
+                              const SizedBox(width: AppTheme.spacingM),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.errorColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Email Field
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        decoration: InputDecoration(
+                          labelText: languageProvider.translate('email'),
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          hintText: 'admin@restaurant.com',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return languageProvider.translate('email_required');
+                          }
+                          if (!value.contains('@')) {
+                            return languageProvider.translate('invalid_email');
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingL),
+
+                      // Password Field
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: languageProvider.translate('password'),
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return languageProvider.translate('password_required');
+                          }
+                          if (value.length < 6) {
+                            return languageProvider.translate('password_too_short');
+                          }
+                          return null;
+                        },
+                        onFieldSubmitted: (_) => _handleLogin(),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingXL),
+
+                      // Login Button
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppTheme.spacingM,
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                            : Text(
+                          languageProvider.translate('login'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingL),
+
+                      // Forgot Password
+                      TextButton(
+                        onPressed: () {
+                          _showForgotPasswordDialog();
+                        },
+                        child: Text(
+                          languageProvider.translate('forgot_password'),
+                          style: TextStyle(color: AppTheme.secondaryColor),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingL),
+
+                      // Info Text
+                      Text(
+                        languageProvider.translate('admin_info'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textLight,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -318,26 +279,29 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     );
   }
 
-  Future<void> _handleForgotPassword() async {
-    final emailController = TextEditingController(text: _emailController.text);
+  void _showForgotPasswordDialog() {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final emailController = TextEditingController();
 
-    final result = await showDialog<String>(
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Password'),
+        title: Text(languageProvider.translate('forgot_password')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Enter your email address and we\'ll send you a link to reset your password.',
+            Text(
+              languageProvider.translate('reset_password_info'),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: AppTheme.spacingL),
             TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
+              decoration: InputDecoration(
+                labelText: languageProvider.translate('email'),
+                hintText: 'admin@restaurant.com',
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
             ),
           ],
@@ -345,56 +309,38 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(languageProvider.translate('cancel')),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, emailController.text),
-            child: const Text('Send Reset Link'),
+            onPressed: () async {
+              if (emailController.text.isNotEmpty) {
+                final authService = Provider.of<AuthService>(context, listen: false);
+                final result = await authService.sendPasswordResetEmail(
+                  emailController.text.trim(),
+                );
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result.isSuccess
+                            ? languageProvider.translate('reset_email_sent')
+                            : result.message ?? languageProvider.translate('error'),
+                      ),
+                      backgroundColor: result.isSuccess
+                          ? AppTheme.successColor
+                          : AppTheme.errorColor,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(languageProvider.translate('send_reset_email')),
           ),
         ],
       ),
     );
-
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        final authService = Provider.of<AuthService>(context, listen: false);
-        final resetResult = await authService.sendPasswordResetEmail(result);
-
-        if (resetResult.isSuccess && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Password reset link sent to your email'),
-              backgroundColor: AppTheme.successColor,
-            ),
-          );
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(resetResult.message ?? 'Failed to send reset link'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('An error occurred'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-    }
   }
 }

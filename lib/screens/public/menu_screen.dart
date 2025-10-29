@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../config/theme.dart';
 import '../../config/routes.dart';
-import '../../models/menu_item.dart';
 import '../../models/category.dart';
-import '../../models/day_period.dart';
-import '../../models/notification.dart';
+import '../../models/menu_item.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/language_provider.dart';
-import '../../widgets/menu/category_carousel.dart';
-import '../../widgets/menu/menu_item_card.dart';
-import '../../widgets/menu/search_bar.dart' as app;
-import '../../widgets/menu/filter_chips.dart';
+import '../../widgets/category_carousel.dart';
+import '../../widgets/menu_item_card.dart';
+import '../../widgets/search_bar.dart' as custom;
+import '../../widgets/filter_chips.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -24,48 +21,29 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
-  String? selectedCategoryId;
-  String searchQuery = '';
-  MenuItemFilter filter = MenuItemFilter();
-  MenuItemSort sortOption = MenuItemSort.name;
-  bool showFilters = false;
-  final ScrollController _scrollController = ScrollController();
-  RestaurantNotification? activeBanner;
+  String? _selectedCategoryId;
+  String _searchQuery = '';
+  MenuItemFilter _filter = MenuItemFilter();
+  MenuItemSort _sortOption = MenuItemSort.name;
+  bool _showFilters = false;
+  int _notificationCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    _checkNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadInitialData() async {
+  Future<void> _loadData() async {
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-    await menuProvider.loadCategories();
-    await menuProvider.loadMenuItems();
-    await menuProvider.loadDayPeriods();
-  }
+    await menuProvider.refreshAll();
 
-  void _checkNotifications() {
-    final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-    menuProvider.getActiveNotifications().then((notifications) {
-      final bannerNotifications = notifications
-          .where((n) => n.showAsBanner && n.isActive())
-          .toList();
-
-      if (bannerNotifications.isNotEmpty) {
-        // Sort by priority and show the highest priority
-        bannerNotifications.sort((a, b) => b.priority.compareTo(a.priority));
-        setState(() {
-          activeBanner = bannerNotifications.first;
-        });
-      }
+    // Get notification count
+    final notifications = await menuProvider.getActiveNotifications();
+    setState(() {
+      _notificationCount = notifications.length;
     });
   }
 
@@ -75,355 +53,326 @@ class _MenuScreenState extends State<MenuScreen> {
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
+
     final locale = languageProvider.currentLocale.languageCode;
-
-    // Get current day period if enabled
-    DayPeriod? currentDayPeriod;
-    if (settingsProvider.dayPeriodsEnabled) {
-      currentDayPeriod = DayPeriod.getCurrentPeriod(menuProvider.dayPeriods);
-    }
-
-    // Build categories list including special categories
-    final categories = _buildCategoriesWithSpecial(
-      menuProvider.categories,
-      favoritesProvider.hasFavorites,
-      locale,
-    );
-
-    // Get filtered and sorted items
-    final items = _getFilteredAndSortedItems(
-      menuProvider.menuItems,
-      favoritesProvider.favoriteIds,
-      currentDayPeriod,
-      locale,
-    );
+    final currentDayPeriod = menuProvider.getCurrentDayPeriod();
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // App Header
-            _buildHeader(context, settingsProvider, languageProvider),
-
-            // Notification Banner
-            if (activeBanner != null)
-              _buildNotificationBanner(activeBanner!, locale),
-
-            // Day Period Display
-            if (currentDayPeriod != null)
-              _buildDayPeriodBanner(currentDayPeriod, locale),
-
-            // Categories Carousel
-            CategoryCarousel(
-              categories: categories,
-              selectedCategoryId: selectedCategoryId,
-              onCategorySelected: (categoryId) {
-                setState(() {
-                  selectedCategoryId = categoryId;
-                });
-              },
-              locale: locale,
-            ),
-
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacingM,
-                vertical: AppTheme.spacingS,
+      backgroundColor: AppTheme.backgroundColor,
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          slivers: [
+            // App Bar
+            SliverAppBar(
+              floating: true,
+              pinned: true,
+              expandedHeight: 120,
+              backgroundColor: AppTheme.primaryColor,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  settingsProvider.getRestaurantNameForLocale(locale),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                centerTitle: true,
               ),
-              child: app.SearchBar(
-                onSearchChanged: (query) {
-                  setState(() {
-                    searchQuery = query;
-                    filter = filter.copyWith(searchQuery: query);
-                  });
-                },
-                onFilterPressed: () {
-                  setState(() {
-                    showFilters = !showFilters;
-                  });
-                },
-              ),
-            ),
-
-            // Filter Chips
-            if (showFilters)
-              FilterChips(
-                filter: filter,
-                onFilterChanged: (newFilter) {
-                  setState(() {
-                    filter = newFilter;
-                  });
-                },
-                sortOption: sortOption,
-                onSortChanged: (newSort) {
-                  setState(() {
-                    sortOption = newSort;
-                  });
-                },
-              ),
-
-            // Menu Items List
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _loadInitialData,
-                child: items.isEmpty
-                    ? _buildEmptyState(locale)
-                    : _buildMenuItemsList(items, favoritesProvider, locale),
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      // Info FAB
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          AppRoutes.navigateTo(context, AppRoutes.info);
-        },
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.info_outline),
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-      BuildContext context,
-      SettingsProvider settingsProvider,
-      LanguageProvider languageProvider,
-      ) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Restaurant Logo/Name
-          Expanded(
-            child: Text(
-              settingsProvider.restaurantName,
-              style: Theme.of(context).textTheme.headlineLarge,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          // Language Selector
-          PopupMenuButton<Locale>(
-            icon: const Icon(Icons.language),
-            onSelected: (locale) {
-              languageProvider.setLocale(locale);
-            },
-            itemBuilder: (context) {
-              return languageProvider.supportedLocales.map((locale) {
-                return PopupMenuItem<Locale>(
-                  value: locale,
-                  child: Row(
+              actions: [
+                // Language Selector
+                PopupMenuButton<String>(
+                  icon: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_getLanguageFlag(locale.languageCode)),
-                      const SizedBox(width: AppTheme.spacingS),
-                      Text(_getLanguageName(locale.languageCode)),
+                      Text(
+                        languageProvider.currentLanguageFlag,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      const Icon(Icons.arrow_drop_down, color: Colors.white),
                     ],
                   ),
-                );
-              }).toList();
-            },
-          ),
-
-          // Notifications Bell
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  // Navigate to notifications
-                  AppRoutes.navigateTo(context, AppRoutes.notifications);
-                },
-              ),
-              // Badge for new notifications
-              if (_hasNewNotifications())
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.accentColor,
-                      shape: BoxShape.circle,
+                  onSelected: (languageCode) {
+                    languageProvider.setLanguageCode(languageCode);
+                  },
+                  itemBuilder: (context) => languageProvider.supportedLocales
+                      .map((locale) => PopupMenuItem(
+                    value: locale.languageCode,
+                    child: Row(
+                      children: [
+                        Text(
+                          languageProvider.getLanguageFlag(locale.languageCode),
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                        const SizedBox(width: AppTheme.spacingS),
+                        Text(languageProvider.getLanguageName(locale.languageCode)),
+                      ],
                     ),
-                  ),
+                  ))
+                      .toList(),
                 ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildNotificationBanner(RestaurantNotification notification, String locale) {
-    return Container(
-      margin: const EdgeInsets.all(AppTheme.spacingM),
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppTheme.radiusM),
-        border: Border.all(
-          color: AppTheme.secondaryColor.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          if (notification.imageUrl != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppTheme.radiusS),
-              child: CachedNetworkImage(
-                imageUrl: notification.imageUrl!,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-              ),
-            ),
-          if (notification.imageUrl != null)
-            const SizedBox(width: AppTheme.spacingM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification.getTitle(locale),
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: AppTheme.spacingXS),
-                Text(
-                  notification.getMessage(locale),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (notification.ctaText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppTheme.spacingS),
-                    child: TextButton(
+                // Notifications
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
                       onPressed: () {
-                        _handleNotificationDeepLink(notification);
+                        _showNotifications();
                       },
-                      child: Text(notification.ctaText!),
                     ),
-                  ),
+                    if (_notificationCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            _notificationCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                // Info
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                  onPressed: () {
+                    AppRoutes.navigateTo(context, AppRoutes.info);
+                  },
+                ),
+
+                // Admin Access
+                IconButton(
+                  icon: const Icon(Icons.admin_panel_settings, color: Colors.white54),
+                  onPressed: () {
+                    AppRoutes.navigateTo(context, AppRoutes.adminLogin);
+                  },
+                ),
               ],
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              setState(() {
-                activeBanner = null;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildDayPeriodBanner(DayPeriod dayPeriod, String locale) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor.withOpacity(0.1),
-            AppTheme.primaryColor.withOpacity(0.05),
+            // Day Period Indicator
+            if (settingsProvider.dayPeriodsEnabled && currentDayPeriod != null)
+              SliverToBoxAdapter(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppTheme.spacingM),
+                  color: AppTheme.secondaryColor.withOpacity(0.1),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        currentDayPeriod.getDisplayIcon(),
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(width: AppTheme.spacingS),
+                      Text(
+                        currentDayPeriod.getName(locale),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: AppTheme.secondaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.spacingM),
+                      Text(
+                        currentDayPeriod.getTimeRangeString(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Categories
+            SliverToBoxAdapter(
+              child: CategoryCarousel(
+                categories: _buildCategoryList(menuProvider, languageProvider),
+                selectedCategoryId: _selectedCategoryId,
+                onCategorySelected: (categoryId) {
+                  setState(() {
+                    _selectedCategoryId = categoryId;
+                  });
+                },
+                locale: locale,
+              ),
+            ),
+
+            // Search Bar & Filter Toggle
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                child: Column(
+                  children: [
+                    // Search Bar
+                    custom.SearchBar(
+                      onSearchChanged: (query) {
+                        setState(() {
+                          _searchQuery = query;
+                          _filter = _filter.copyWith(searchQuery: query);
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: AppTheme.spacingM),
+
+                    // Filter Toggle Button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _showFilters = !_showFilters;
+                        });
+                      },
+                      icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
+                      label: Text(languageProvider.translate('filter')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _showFilters ? AppTheme.secondaryColor : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Filters (if shown)
+            if (_showFilters)
+              SliverToBoxAdapter(
+                child: FilterChips(
+                  filter: _filter,
+                  onFilterChanged: (filter) {
+                    setState(() {
+                      _filter = filter;
+                    });
+                  },
+                  sortOption: _sortOption,
+                  onSortChanged: (sort) {
+                    setState(() {
+                      _sortOption = sort;
+                    });
+                  },
+                ),
+              ),
+
+            // Menu Items
+            if (menuProvider.isLoadingItems)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                sliver: _buildMenuItemsList(
+                  menuProvider,
+                  favoritesProvider,
+                  languageProvider,
+                  locale,
+                ),
+              ),
           ],
         ),
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                dayPeriod.getDisplayIcon(),
-                style: const TextStyle(fontSize: 24),
-              ),
-              const SizedBox(width: AppTheme.spacingS),
-              Text(
-                dayPeriod.getName(locale),
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(width: AppTheme.spacingS),
-              Text(
-                dayPeriod.getTimeRangeString(),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-          if (dayPeriod.getDescription(locale) != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppTheme.spacingXS),
-              child: Text(
-                dayPeriod.getDescription(locale)!,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ),
-        ],
-      ),
     );
+  }
+
+  List<Category> _buildCategoryList(MenuProvider menuProvider, LanguageProvider languageProvider) {
+    final categories = <Category>[];
+
+    // Add special categories
+    categories.add(SpecialCategories.getAllCategory({
+      'en': 'All',
+      'pl': 'Wszystkie',
+    }));
+
+    if (Provider.of<FavoritesProvider>(context).hasFavorites) {
+      categories.add(SpecialCategories.getFavoritesCategory({
+        'en': 'Favorites',
+        'pl': 'Ulubione',
+      }));
+    }
+
+    // Add regular categories
+    categories.addAll(menuProvider.categories);
+
+    return categories;
   }
 
   Widget _buildMenuItemsList(
-      List<MenuItem> items,
+      MenuProvider menuProvider,
       FavoritesProvider favoritesProvider,
+      LanguageProvider languageProvider,
       String locale,
       ) {
-    if (AppTheme.isDesktop(context)) {
-      // Grid layout for desktop
-      return GridView.builder(
-        controller: _scrollController,
-        padding: AppTheme.responsivePadding(context),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 400,
-          childAspectRatio: 1.5,
-          crossAxisSpacing: AppTheme.spacingM,
-          mainAxisSpacing: AppTheme.spacingM,
+    // Get filtered items
+    List<MenuItem> items = menuProvider.menuItems;
+
+    // Apply category filter
+    if (_selectedCategoryId == SpecialCategories.favorites) {
+      items = items.where((item) => favoritesProvider.isFavorite(item.id)).toList();
+    } else if (_selectedCategoryId != null && _selectedCategoryId != SpecialCategories.all) {
+      items = items.where((item) => item.categoryId == _selectedCategoryId).toList();
+    }
+
+    // Apply day period filter
+    final currentDayPeriod = menuProvider.getCurrentDayPeriod();
+    if (currentDayPeriod != null) {
+      items = items.where((item) => item.isAvailableNow(currentDayPeriod.id)).toList();
+    }
+
+    // Apply custom filters
+    items = items.where((item) => _filter.matches(item, locale)).toList();
+
+    // Apply sorting
+    items = menuProvider.getSortedItems(items, _sortOption, locale);
+
+    if (items.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingXL),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.search_off,
+                  size: 64,
+                  color: AppTheme.textLight,
+                ),
+                const SizedBox(height: AppTheme.spacingM),
+                Text(
+                  languageProvider.translate('no_items_found'),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return MenuItemCard(
-            item: item,
-            isFavorite: favoritesProvider.isFavorite(item.id),
-            onFavoriteToggle: () {
-              favoritesProvider.toggleFavorite(item.id);
-            },
-            onTap: () {
-              AppRoutes.navigateTo(
-                context,
-                AppRoutes.itemDetail,
-                arguments: {'itemId': item.id},
-              );
-            },
-            locale: locale,
-          );
-        },
       );
-    } else {
-      // List layout for mobile/tablet
-      return ListView.builder(
-        controller: _scrollController,
-        padding: AppTheme.responsivePadding(context),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+            (context, index) {
           final item = items[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: AppTheme.spacingM),
@@ -444,186 +393,71 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
           );
         },
-      );
-    }
-  }
-
-  Widget _buildEmptyState(String locale) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.restaurant_menu,
-            size: 80,
-            color: AppTheme.textLight,
-          ),
-          const SizedBox(height: AppTheme.spacingL),
-          Text(
-            _getEmptyStateMessage(locale),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ],
+        childCount: items.length,
       ),
     );
   }
 
-  List<Category> _buildCategoriesWithSpecial(
-      List<Category> originalCategories,
-      bool hasFavorites,
-      String locale,
-      ) {
-    final categories = <Category>[];
-
-    // Add favorites category if there are favorites
-    if (hasFavorites) {
-      categories.add(SpecialCategories.getFavoritesCategory({
-        'pl': 'Ulubione',
-        'en': 'Favorites',
-      }));
-    }
-
-    // Add all items category
-    categories.add(SpecialCategories.getAllCategory({
-      'pl': 'Wszystkie',
-      'en': 'All',
-    }));
-
-    // Add regular categories
-    categories.addAll(originalCategories);
-
-    return categories;
-  }
-
-  List<MenuItem> _getFilteredAndSortedItems(
-      List<MenuItem> allItems,
-      Set<String> favoriteIds,
-      DayPeriod? currentDayPeriod,
-      String locale,
-      ) {
-    // Start with all items
-    var items = List<MenuItem>.from(allItems);
-
-    // Apply category filter
-    if (selectedCategoryId != null) {
-      if (selectedCategoryId == SpecialCategories.favorites) {
-        items = items.where((item) => favoriteIds.contains(item.id)).toList();
-      } else if (selectedCategoryId != SpecialCategories.all) {
-        items = items.where((item) => item.categoryId == selectedCategoryId).toList();
-      }
-    }
-
-    // Apply day period filter if enabled
-    if (currentDayPeriod != null) {
-      filter = filter.copyWith(dayPeriod: currentDayPeriod.id);
-    }
-
-    // Apply other filters
-    items = items.where((item) => filter.matches(item, locale)).toList();
-
-    // Sort items
-    switch (sortOption) {
-      case MenuItemSort.name:
-        items.sort((a, b) => a.getName(locale).compareTo(b.getName(locale)));
-        break;
-      case MenuItemSort.priceAsc:
-        items.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case MenuItemSort.priceDesc:
-        items.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case MenuItemSort.calories:
-        items.sort((a, b) {
-          if (a.calories == null) return 1;
-          if (b.calories == null) return -1;
-          return a.calories!.compareTo(b.calories!);
-        });
-        break;
-      case MenuItemSort.newest:
-        items.sort((a, b) {
-          if (a.createdAt == null) return 1;
-          if (b.createdAt == null) return -1;
-          return b.createdAt!.compareTo(a.createdAt!);
-        });
-        break;
-    }
-
-    return items;
-  }
-
-  void _handleNotificationDeepLink(RestaurantNotification notification) {
-    final deepLinkData = notification.parseDeepLink();
-    if (deepLinkData == null) return;
-
-    switch (deepLinkData.type) {
-      case DeepLinkType.category:
-        setState(() {
-          selectedCategoryId = deepLinkData.id;
-        });
-        break;
-      case DeepLinkType.item:
-        AppRoutes.navigateTo(
-          context,
-          AppRoutes.itemDetail,
-          arguments: {'itemId': deepLinkData.id},
+  void _showNotifications() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusL)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return _buildNotificationsList(scrollController);
+          },
         );
-        break;
-      case DeepLinkType.info:
-        AppRoutes.navigateTo(context, AppRoutes.info);
-        break;
-    }
+      },
+    );
   }
 
-  bool _hasNewNotifications() {
-    // Check if there are unread notifications
-    // This would be implemented with a notification provider
-    return false;
-  }
+  Widget _buildNotificationsList(ScrollController scrollController) {
+    final menuProvider = Provider.of<MenuProvider>(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final locale = languageProvider.currentLocale.languageCode;
 
-  String _getLanguageFlag(String languageCode) {
-    switch (languageCode) {
-      case 'pl':
-        return '🇵🇱';
-      case 'en':
-        return '🇬🇧';
-      case 'de':
-        return '🇩🇪';
-      case 'es':
-        return '🇪🇸';
-      case 'fr':
-        return '🇫🇷';
-      default:
-        return '🌐';
-    }
-  }
+    return FutureBuilder<List<dynamic>>(
+      future: menuProvider.getActiveNotifications(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Text(languageProvider.translate('no_notifications')),
+          );
+        }
 
-  String _getLanguageName(String languageCode) {
-    switch (languageCode) {
-      case 'pl':
-        return 'Polski';
-      case 'en':
-        return 'English';
-      case 'de':
-        return 'Deutsch';
-      case 'es':
-        return 'Español';
-      case 'fr':
-        return 'Français';
-      default:
-        return languageCode.toUpperCase();
-    }
-  }
+        final notifications = snapshot.data!;
 
-  String _getEmptyStateMessage(String locale) {
-    switch (locale) {
-      case 'pl':
-        return 'Brak pozycji w menu';
-      case 'en':
-        return 'No menu items found';
-      default:
-        return 'No menu items found';
-    }
+        return ListView.builder(
+          controller: scrollController,
+          padding: const EdgeInsets.all(AppTheme.spacingM),
+          itemCount: notifications.length,
+          itemBuilder: (context, index) {
+            final notification = notifications[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: AppTheme.secondaryColor,
+                  child: Icon(Icons.campaign, color: Colors.white),
+                ),
+                title: Text(notification.getTitle(locale)),
+                subtitle: Text(notification.getMessage(locale)),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Handle notification tap
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
-import '../../models/category.dart';
+// Fixed: Using alias for Category to avoid conflicts
+import '../../models/category.dart' as app_models;
 import '../../providers/menu_provider.dart';
 import '../../providers/language_provider.dart';
-import '../../widgets/category_form.dart';
+// Fixed: Correct import path for CategoryForm
+import '../../widgets/admin/category_form.dart';
 
 class ManageCategoriesScreen extends StatefulWidget {
   const ManageCategoriesScreen({super.key});
@@ -74,7 +76,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
-  Widget _buildCategoryCard(Category category, int index) {
+  Widget _buildCategoryCard(app_models.Category category, int index) {
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final itemCount = menuProvider.getItemsCountByCategory(category.id);
@@ -191,7 +193,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
-  String _getOtherLanguages(Category category) {
+  String _getOtherLanguages(app_models.Category category) {
     final languages = category.name.entries
         .where((e) => e.key != 'en')
         .map((e) => '${_getFlagForLanguage(e.key)} ${e.value}')
@@ -220,7 +222,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
         newIndex -= 1;
       }
       final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-      final categories = List<Category>.from(menuProvider.categories);
+      final categories = List<app_models.Category>.from(menuProvider.categories);
       final category = categories.removeAt(oldIndex);
       categories.insert(newIndex, category);
 
@@ -232,7 +234,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     });
   }
 
-  void _handleMenuAction(String action, Category category) {
+  void _handleMenuAction(String action, app_models.Category category) {
     switch (action) {
       case 'edit':
         _showCategoryDialog(category);
@@ -246,7 +248,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     }
   }
 
-  void _toggleCategoryStatus(Category category) async {
+  void _toggleCategoryStatus(app_models.Category category) async {
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
     final updatedCategory = category.copyWith(isActive: !category.isActive);
 
@@ -276,7 +278,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     }
   }
 
-  void _confirmDelete(Category category) {
+  void _confirmDelete(app_models.Category category) {
     final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
     final itemCount = menuProvider.getItemsCountByCategory(category.id);
@@ -351,7 +353,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
-  void _showCategoryDialog(Category? category) {
+  void _showCategoryDialog(app_models.Category? category) {
     showDialog(
       context: context,
       barrierDismissible: false,

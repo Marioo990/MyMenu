@@ -136,7 +136,8 @@ class AppTheme {
       iconTheme: IconThemeData(color: textPrimary),
     ),
 
-    cardTheme: CardTheme(
+    // Fixed: Changed CardTheme to CardThemeData
+    cardTheme: CardThemeData(
       elevation: elevationS,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusL),
@@ -266,7 +267,8 @@ class AppTheme {
       iconTheme: IconThemeData(color: Colors.white),
     ),
 
-    cardTheme: CardTheme(
+    // Fixed: Changed CardTheme to CardThemeData
+    cardTheme: CardThemeData(
       elevation: elevationS,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusL),

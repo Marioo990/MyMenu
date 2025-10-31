@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/menu_item.dart';
-import '../models/category.dart';
+// Fixed: Using alias for Category to avoid conflict with Flutter's Category annotation
+import '../models/category.dart' as app_models;
 import '../models/notification.dart';
 import '../models/day_period.dart';
 import '../services/firebase_service.dart';
@@ -9,7 +10,7 @@ class MenuProvider with ChangeNotifier {
   final FirebaseService _firebaseService;
 
   // Data
-  List<Category> _categories = [];
+  List<app_models.Category> _categories = [];
   List<MenuItem> _menuItems = [];
   List<RestaurantNotification> _notifications = [];
   List<DayPeriod> _dayPeriods = [];
@@ -27,7 +28,7 @@ class MenuProvider with ChangeNotifier {
   String? _dayPeriodsError;
 
   // Getters
-  List<Category> get categories => _categories;
+  List<app_models.Category> get categories => _categories;
   List<MenuItem> get menuItems => _menuItems;
   List<RestaurantNotification> get notifications => _notifications;
   List<DayPeriod> get dayPeriods => _dayPeriods;
@@ -175,7 +176,7 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Get category by ID
-  Category? getCategory(String id) {
+  app_models.Category? getCategory(String id) {
     try {
       return _categories.firstWhere((category) => category.id == id);
     } catch (e) {
@@ -288,7 +289,7 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
-  Future<void> createCategory(Category category) async {
+  Future<void> createCategory(app_models.Category category) async {
     try {
       await _firebaseService.createCategory(category);
       await loadCategories();
@@ -297,7 +298,7 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateCategory(Category category) async {
+  Future<void> updateCategory(app_models.Category category) async {
     try {
       await _firebaseService.updateCategory(category);
       await loadCategories();

@@ -4,6 +4,8 @@ import '../../config/theme.dart';
 import '../../models/menu_item.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/language_provider.dart';
+// Fixed: Added missing SettingsProvider import
+import '../../providers/settings_provider.dart';
 
 class ManageItemsScreen extends StatefulWidget {
   const ManageItemsScreen({super.key});

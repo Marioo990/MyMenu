@@ -8,10 +8,11 @@ import '../../providers/menu_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/language_provider.dart';
-import '../../widgets/category_carousel.dart';
-import '../../widgets/menu_item_card.dart';
-import '../../widgets/search_bar.dart' as custom;
-import '../../widgets/filter_chips.dart';
+// Fixed imports - pointing to correct subdirectory
+import '../../widgets/menu/category_carousel.dart';
+import '../../widgets/menu/menu_item_card.dart';
+import '../../widgets/menu/search_bar.dart' as custom;
+import '../../widgets/menu/filter_chips.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -22,7 +23,6 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   String? _selectedCategoryId;
-  String _searchQuery = '';
   MenuItemFilter _filter = MenuItemFilter();
   MenuItemSort _sortOption = MenuItemSort.name;
   bool _showFilters = false;
@@ -226,7 +226,6 @@ class _MenuScreenState extends State<MenuScreen> {
                     custom.SearchBar(
                       onSearchChanged: (query) {
                         setState(() {
-                          _searchQuery = query;
                           _filter = _filter.copyWith(searchQuery: query);
                         });
                       },

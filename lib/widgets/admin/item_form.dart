@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../models/menu_item.dart';
-import '../../models/category.dart';
+// Removed unused import: import '../../models/category.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/language_provider.dart';
 

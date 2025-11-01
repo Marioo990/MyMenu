@@ -135,14 +135,15 @@
     }
   </style>
 
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
+  <!-- Aktualizacja do Firebase 10.7.0 -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
 
-  <!-- Google Maps (replace YOUR_API_KEY with actual key) -->
+  <!-- Google Maps (opcjonalne - odkomentuj jeśli używasz) -->
   <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script> -->
 </head>
 <body>
@@ -166,35 +167,12 @@
 </div>
 
 <script>
-  // Service Worker Registration
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('flutter-first-frame', function () {
-      navigator.serviceWorker.register('flutter_service_worker.js')
-        .then(function(registration) {
-          console.log('Service Worker registered successfully:', registration.scope);
-        })
-        .catch(function(error) {
-          console.log('Service Worker registration failed:', error);
-        });
-    });
-  }
-
-  // Handle loading errors
-  window.addEventListener('error', function(e) {
-    console.error('Loading error:', e);
-    // Show error screen after a timeout
-    setTimeout(function() {
-      if (!window.flutterLoaded) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'flex';
-      }
-    }, 10000); // 10 seconds timeout
-  });
-
-  // Flutter initialization
+  // Flutter initialization - NOWY SPOSÓB
   window.addEventListener('load', function(ev) {
-    // Download main.dart.js
-    _flutter.loader.loadEntrypoint({
+    var serviceWorkerVersion = null;
+
+    // Flutter loader - używamy load zamiast loadEntrypoint
+    _flutter.loader.load({
       serviceWorker: {
         serviceWorkerVersion: serviceWorkerVersion,
       },
@@ -210,13 +188,20 @@
       }
     });
   });
-</script>
 
-<!-- Flutter Bootstrap -->
-<script src="flutter.js" defer></script>
+  // Handle loading errors
+  window.addEventListener('error', function(e) {
+    console.error('Loading error:', e);
+    // Show error screen after a timeout
+    setTimeout(function() {
+      if (!window.flutterLoaded) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'flex';
+      }
+    }, 10000); // 10 seconds timeout
+  });
 
-<!-- PWA Install Prompt -->
-<script>
+  // PWA Install Prompt
   let deferredPrompt;
 
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -252,16 +237,8 @@
   };
 </script>
 
-<!-- Analytics (optional) -->
-<!-- Google Analytics -->
-<!--
-<script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_GA_ID"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'YOUR_GA_ID');
-</script>
--->
+<!-- Flutter Bootstrap -->
+<script src="flutter.js" defer></script>
+
 </body>
 </html>

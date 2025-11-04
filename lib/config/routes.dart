@@ -176,9 +176,8 @@ class AppRoutes {
     return Navigator.canPop(context);
   }
 }
-
 // Auth Guard Widget
-class AuthGuard extends StatelessWidget {
+class AuthGuard extends StatefulWidget {
   final Widget child;
 
   const AuthGuard({
@@ -186,6 +185,11 @@ class AuthGuard extends StatelessWidget {
     required this.child,
   });
 
+  @override
+  State<AuthGuard> createState() => _AuthGuardState();
+}
+
+class _AuthGuardState extends State<AuthGuard> {
   @override
   Widget build(BuildContext context) {
     // Check if user is authenticated
@@ -202,15 +206,17 @@ class AuthGuard extends StatelessWidget {
         }
 
         if (snapshot.data == true) {
-          return child;
+          return widget.child;
         }
 
         // Redirect to login
-        Future.microtask(() {
-          AppRoutes.navigateAndReplace(
-            context,
-            AppRoutes.adminLogin,
-          );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            AppRoutes.navigateAndReplace(
+              context,
+              AppRoutes.adminLogin,
+            );
+          }
         });
 
         return const Scaffold(

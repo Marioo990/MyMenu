@@ -19,8 +19,10 @@ class FirebaseService {
   // Enable offline persistence
   Future<void> enableOfflinePersistence() async {
     try {
-      await _firestore.enablePersistence(
-        const PersistenceSettings(synchronizeTabs: true),
+      // Dla Web - settings jest property, nie metodą
+      _firestore.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       );
     } catch (e) {
       print('Error enabling offline persistence: $e');

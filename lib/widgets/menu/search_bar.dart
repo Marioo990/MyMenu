@@ -192,7 +192,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar>
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final screenWidth = MediaQuery.of(context).size.width;
+    // final screenWidth = MediaQuery.of(context).size.width;
 
     return Container(
       height: 56,

@@ -98,13 +98,15 @@ class AuthService {
   }
 
   // Update email
+  // Update email
   Future<AuthResult> updateEmail(String newEmail) async {
     try {
       if (currentUser == null) {
         return const AuthResult.error(message: 'No user logged in');
       }
 
-      await currentUser!.updateEmail(newEmail);
+      // Nowa metoda w Firebase Auth - najpierw weryfikacja emaila
+      await currentUser!.verifyBeforeUpdateEmail(newEmail);
       return const AuthResult.success();
     } on FirebaseAuthException catch (e) {
       return AuthResult.error(message: _getErrorMessage(e.code));

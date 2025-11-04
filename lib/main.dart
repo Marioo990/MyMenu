@@ -1,74 +1,5 @@
-// export 'main_debug.dart';
-// import 'package:flutter/material.dart';
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:provider/provider.dart';
-// import 'firebase_options.dart';
-// import 'config/theme.dart';
-// import 'config/routes.dart';
-// import 'providers/menu_provider.dart';
-// import 'providers/settings_provider.dart';
-// import 'providers/favorites_provider.dart';
-// import 'providers/language_provider.dart';
-// import 'services/firebase_service.dart';
-// import 'services/auth_service.dart';
-//
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//
-//   // Initialize Firebase
-//   await Firebase.initializeApp(
-//     options: DefaultFirebaseOptions.currentPlatform,
-//   );
-//
-//   // Initialize services
-//   final firebaseService = FirebaseService();
-//   final authService = AuthService();
-//
-//   // Enable offline persistence for Firestore
-//   await firebaseService.enableOfflinePersistence();
-//
-//   runApp(
-//     MultiProvider(
-//       providers: [
-//         Provider<FirebaseService>.value(value: firebaseService),
-//         Provider<AuthService>.value(value: authService),
-//         ChangeNotifierProvider(create: (_) => SettingsProvider(firebaseService)),
-//         ChangeNotifierProvider(create: (_) => LanguageProvider()),
-//         ChangeNotifierProvider(create: (_) => MenuProvider(firebaseService)),
-//         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
-//       ],
-//       child: const RestaurantMenuApp(),
-//     ),
-//   );
-// }
-//
-// class RestaurantMenuApp extends StatelessWidget {
-//   const RestaurantMenuApp({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Consumer<LanguageProvider>(
-//       builder: (context, languageProvider, _) {
-//         return Consumer<SettingsProvider>(
-//           builder: (context, settingsProvider, _) {
-//             return MaterialApp(
-//               title: settingsProvider.restaurantName,
-//               debugShowCheckedModeBanner: false,
-//               theme: AppTheme.lightTheme,
-//               darkTheme: AppTheme.darkTheme,
-//               themeMode: ThemeMode.light,
-//               locale: languageProvider.currentLocale,
-//               supportedLocales: languageProvider.supportedLocales,
-//               initialRoute: AppRoutes.menu,
-//               onGenerateRoute: AppRoutes.generateRoute,
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -81,7 +12,17 @@ import 'providers/language_provider.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 
+// Flaga zapobiegająca podwójnej inicjalizacji
+bool _isInitialized = false;
+
 void main() async {
+  // Zapobieganie podwójnej inicjalizacji
+  if (_isInitialized) {
+    print('⚠️ App already initialized, skipping...');
+    return;
+  }
+  _isInitialized = true;
+
   WidgetsFlutterBinding.ensureInitialized();
 
   print('🚀 Starting app initialization...');
@@ -161,6 +102,7 @@ void main() async {
     // Show error screen
     runApp(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           backgroundColor: Colors.red.shade50,
           body: Center(
@@ -188,10 +130,7 @@ void main() async {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () {
-                          // W Flutter Web możemy użyć window tylko dla web
-                          // Dla innych platform użyjemy Phoenix pattern
-                          WidgetsFlutterBinding.ensureInitialized();
-                          runApp(const MaterialApp(home: CircularProgressIndicator()));
+                          _isInitialized = false; // Reset flagi
                           main(); // Restart app
                         },
                         icon: const Icon(Icons.refresh),
@@ -226,6 +165,25 @@ class RestaurantMenuApp extends StatelessWidget {
 
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, _) {
+        // KRYTYCZNE: Sprawdź czy languageProvider jest zainicjalizowany
+        if (languageProvider.currentLocale == null) {
+          print('⚠️ LanguageProvider not initialized yet, waiting...');
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', 'US')],
+            home: const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
         print('   Language: ${languageProvider.currentLanguageCode}');
 
         return Consumer<SettingsProvider>(
@@ -235,6 +193,12 @@ class RestaurantMenuApp extends StatelessWidget {
               print('⏳ Settings still loading...');
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: languageProvider.supportedLocales,
                 home: Scaffold(
                   body: Center(
                     child: Column(
@@ -244,7 +208,10 @@ class RestaurantMenuApp extends StatelessWidget {
                         const SizedBox(height: 24),
                         Text(
                           'Loading settings...',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ],
                     ),
@@ -259,16 +226,86 @@ class RestaurantMenuApp extends StatelessWidget {
 
             print('✅ Building main app with settings loaded');
 
+            // KRYTYCZNE: Bezpieczne pobieranie danych z zabezpieczeniami
+            String appTitle = 'Restaurant Menu'; // Domyślna wartość
+            try {
+              final name = settingsProvider.restaurantName;
+              if (name.isNotEmpty) {
+                appTitle = name;
+              }
+            } catch (e) {
+              print('⚠️ Error getting restaurant name: $e');
+            }
+
+            // Sprawdź supportedLocales
+            final locales = languageProvider.supportedLocales;
+            if (locales.isEmpty) {
+              print('⚠️ No supported locales, using default');
+            }
+
+            print('📱 Building MaterialApp with:');
+            print('   - Title: $appTitle');
+            print('   - Locale: ${languageProvider.currentLocale}');
+            print('   - Supported locales: ${locales.length}');
+
             return MaterialApp(
-              title: settingsProvider.restaurantName,
+              title: appTitle,
               debugShowCheckedModeBanner: false,
+
+              // Theme
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: ThemeMode.light,
-              locale: languageProvider.currentLocale,
-              supportedLocales: languageProvider.supportedLocales,
+
+              // Localization - KRYTYCZNE: Wszystkie wartości muszą być non-null
+              locale: languageProvider.currentLocale ?? const Locale('en', 'US'),
+              supportedLocales: locales.isNotEmpty
+                  ? locales
+                  : const [Locale('en', 'US')],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+
+              // Navigation
               initialRoute: AppRoutes.menu,
               onGenerateRoute: AppRoutes.generateRoute,
+
+              // Error handling
+              builder: (context, widget) {
+                // Catch any widget build errors
+                ErrorWidget.builder = (FlutterErrorDetails details) {
+                  print('🔴 Widget Error: ${details.exception}');
+                  return Container(
+                    color: Colors.red.shade50,
+                    padding: const EdgeInsets.all(20),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error, size: 48, color: Colors.red),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Widget Error',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            details.exception.toString(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                };
+                return widget ?? const SizedBox();
+              },
             );
           },
         );

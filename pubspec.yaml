@@ -8,6 +8,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # Firebase - Updated to compatible versions
   firebase_core: ^4.2.0

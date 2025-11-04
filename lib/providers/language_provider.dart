@@ -20,10 +20,17 @@ class LanguageProvider with ChangeNotifier {
       'favorites': 'Favorites',
       'all': 'All',
       'search': 'Search',
+      'search_menu': 'Search menu...',
+      'search_hint': 'Search for dishes...',
+      'tap_to_search': 'Tap to search',
       'filter': 'Filter',
       'sort': 'Sort',
       'price': 'Price',
+      'price_low': 'Price: Low to High',
+      'price_high': 'Price: High to Low',
+      'price_range': 'Price Range',
       'calories': 'Calories',
+      'max_calories': 'Max Calories',
       'name': 'Name',
       'newest': 'Newest',
       'contains_allergens': 'Contains allergens',
@@ -32,7 +39,12 @@ class LanguageProvider with ChangeNotifier {
       'vegetarian': 'Vegetarian',
       'gluten_free': 'Gluten Free',
       'dairy_free': 'Dairy Free',
+      'high_protein': 'High Protein',
+      'low_carb': 'Low Carb',
+      'fish': 'Fish',
+      'meat': 'Meat',
       'spicy': 'Spicy',
+      'spiciness': 'Spiciness',
       'mild': 'Mild',
       'medium': 'Medium',
       'hot': 'Hot',
@@ -64,6 +76,7 @@ class LanguageProvider with ChangeNotifier {
       'sunday': 'Sunday',
       'closed': 'Closed',
       'notifications': 'Notifications',
+      'no_notifications': 'No notifications',
       'settings': 'Settings',
       'language': 'Language',
       'currency': 'Currency',
@@ -77,32 +90,105 @@ class LanguageProvider with ChangeNotifier {
       'loading': 'Loading...',
       'error': 'Error',
       'retry': 'Retry',
+      'clear': 'Clear',
+      'apply': 'Apply',
+      'all': 'All',
       'admin': 'Admin',
+      'admin_login': 'Admin Login',
+      'admin_panel': 'Admin Panel',
+      'admin_access_only': 'Admin access only',
       'login': 'Login',
       'logout': 'Logout',
       'dashboard': 'Dashboard',
+      'welcome_admin': 'Welcome, Admin!',
+      'dashboard_subtitle': 'Manage your restaurant menu and settings',
+      'quick_actions': 'Quick Actions',
+      'total_items': 'Total Items',
+      'categories': 'Categories',
+      'active_notifications': 'Active Notifications',
       'manage_menu': 'Manage Menu',
+      'add_edit_delete_items': 'Add, edit, or delete menu items',
       'manage_categories': 'Manage Categories',
-      'manage_notifications': 'Manage Notifications',
-      'add_item': 'Add Item',
-      'edit_item': 'Edit Item',
-      'delete_item': 'Delete Item',
-      'save': 'Save',
+      'organize_menu_categories': 'Organize menu categories',
+      'create_announcements': 'Create announcements',
+      'configure_restaurant': 'Configure restaurant settings',
+      'recent_activity': 'Recent Activity',
+      'view_all': 'View All',
+      'item_added': 'Item added',
+      'category_updated': 'Category updated',
+      'item_deleted': 'Item deleted',
+      'notification_created': 'Notification created',
+      'settings_changed': 'Settings changed',
+      'save_settings': 'Save Settings',
+      'email_required': 'Email is required',
+      'invalid_email': 'Invalid email address',
+      'password_required': 'Password is required',
+      'password_too_short': 'Password must be at least 6 characters',
+      'forgot_password': 'Forgot Password?',
+      'reset_password_info': 'Enter your email to receive password reset instructions',
+      'reset_email_sent': 'Password reset email sent',
+      'send_reset_email': 'Send Reset Email',
+      'admin_info': 'Only authorized personnel can access this area',
+      'password': 'Password',
       'cancel': 'Cancel',
+      'save': 'Save',
       'confirm': 'Confirm',
       'are_you_sure': 'Are you sure?',
       'yes': 'Yes',
       'no': 'No',
+      'add_category': 'Add Category',
+      'edit_category': 'Edit Category',
+      'no_categories': 'No categories yet',
+      'add_first_category': 'Add your first category',
+      'edit': 'Edit',
+      'active': 'Active',
+      'inactive': 'Inactive',
+      'activate': 'Activate',
+      'deactivate': 'Deactivate',
+      'delete': 'Delete',
+      'confirm_delete': 'Confirm Delete',
+      'delete_category': 'Delete category',
+      'category_deleted': 'Category deleted successfully',
+      'items': 'items',
+      'icon': 'Icon',
+      'category_names': 'Category Names',
+      'display_order': 'Display Order',
+      'add_item': 'Add Item',
+      'edit_item': 'Edit Item',
+      'item_deleted': 'Item deleted successfully',
+      'add_notification': 'Add Notification',
+      'edit_notification': 'Edit Notification',
+      'scheduled': 'Scheduled',
+      'expired': 'Expired',
+      'no_active_notifications': 'No active notifications',
+      'no_scheduled_notifications': 'No scheduled notifications',
+      'no_expired_notifications': 'No expired notifications',
+      'pinned': 'Pinned',
+      'notification_deleted': 'Notification deleted successfully',
+      'show_as_banner': 'Show as Banner',
+      'show_in_tab': 'Show in Tab',
+      'pin_notification': 'Pin Notification',
+      'description': 'Description',
+      'follow_us': 'Follow Us',
+      'about_us': 'About Us',
+      'location': 'Location',
     },
     'pl': {
       'menu': 'Menu',
       'favorites': 'Ulubione',
       'all': 'Wszystkie',
       'search': 'Szukaj',
+      'search_menu': 'Szukaj w menu...',
+      'search_hint': 'Szukaj potraw...',
+      'tap_to_search': 'Dotknij aby szukać',
       'filter': 'Filtruj',
       'sort': 'Sortuj',
       'price': 'Cena',
+      'price_low': 'Cena: Od najtańszych',
+      'price_high': 'Cena: Od najdroższych',
+      'price_range': 'Zakres cen',
       'calories': 'Kalorie',
+      'max_calories': 'Maks. kalorii',
       'name': 'Nazwa',
       'newest': 'Najnowsze',
       'contains_allergens': 'Zawiera alergeny',
@@ -111,7 +197,12 @@ class LanguageProvider with ChangeNotifier {
       'vegetarian': 'Wegetariańskie',
       'gluten_free': 'Bezglutenowe',
       'dairy_free': 'Bez laktozy',
+      'high_protein': 'Wysokobiałkowe',
+      'low_carb': 'Niskowęglowodanowe',
+      'fish': 'Ryby',
+      'meat': 'Mięso',
       'spicy': 'Ostre',
+      'spiciness': 'Ostrość',
       'mild': 'Łagodne',
       'medium': 'Średnie',
       'hot': 'Ostre',
@@ -143,6 +234,7 @@ class LanguageProvider with ChangeNotifier {
       'sunday': 'Niedziela',
       'closed': 'Zamknięte',
       'notifications': 'Powiadomienia',
+      'no_notifications': 'Brak powiadomień',
       'settings': 'Ustawienia',
       'language': 'Język',
       'currency': 'Waluta',
@@ -156,35 +248,103 @@ class LanguageProvider with ChangeNotifier {
       'loading': 'Ładowanie...',
       'error': 'Błąd',
       'retry': 'Ponów',
+      'clear': 'Wyczyść',
+      'apply': 'Zastosuj',
+      'all': 'Wszystkie',
       'admin': 'Administrator',
+      'admin_login': 'Logowanie administratora',
+      'admin_panel': 'Panel administratora',
+      'admin_access_only': 'Tylko dla administratorów',
       'login': 'Zaloguj',
       'logout': 'Wyloguj',
       'dashboard': 'Panel',
+      'welcome_admin': 'Witaj, Administratorze!',
+      'dashboard_subtitle': 'Zarządzaj menu i ustawieniami restauracji',
+      'quick_actions': 'Szybkie akcje',
+      'total_items': 'Wszystkie pozycje',
+      'categories': 'Kategorie',
+      'active_notifications': 'Aktywne powiadomienia',
       'manage_menu': 'Zarządzaj menu',
+      'add_edit_delete_items': 'Dodawaj, edytuj lub usuwaj pozycje',
       'manage_categories': 'Zarządzaj kategoriami',
-      'manage_notifications': 'Zarządzaj powiadomieniami',
-      'add_item': 'Dodaj pozycję',
-      'edit_item': 'Edytuj pozycję',
-      'delete_item': 'Usuń pozycję',
-      'save': 'Zapisz',
+      'organize_menu_categories': 'Organizuj kategorie menu',
+      'create_announcements': 'Twórz ogłoszenia',
+      'configure_restaurant': 'Konfiguruj ustawienia restauracji',
+      'recent_activity': 'Ostatnia aktywność',
+      'view_all': 'Zobacz wszystko',
+      'item_added': 'Dodano pozycję',
+      'category_updated': 'Zaktualizowano kategorię',
+      'item_deleted': 'Usunięto pozycję',
+      'notification_created': 'Utworzono powiadomienie',
+      'settings_changed': 'Zmieniono ustawienia',
+      'save_settings': 'Zapisz ustawienia',
+      'email_required': 'Email jest wymagany',
+      'invalid_email': 'Nieprawidłowy adres email',
+      'password_required': 'Hasło jest wymagane',
+      'password_too_short': 'Hasło musi mieć co najmniej 6 znaków',
+      'forgot_password': 'Zapomniałeś hasła?',
+      'reset_password_info': 'Wprowadź email aby otrzymać instrukcje resetowania hasła',
+      'reset_email_sent': 'Wysłano email z resetem hasła',
+      'send_reset_email': 'Wyślij email resetujący',
+      'admin_info': 'Tylko upoważniony personel ma dostęp do tego obszaru',
+      'password': 'Hasło',
       'cancel': 'Anuluj',
+      'save': 'Zapisz',
       'confirm': 'Potwierdź',
       'are_you_sure': 'Czy na pewno?',
       'yes': 'Tak',
       'no': 'Nie',
+      'add_category': 'Dodaj kategorię',
+      'edit_category': 'Edytuj kategorię',
+      'no_categories': 'Brak kategorii',
+      'add_first_category': 'Dodaj pierwszą kategorię',
+      'edit': 'Edytuj',
+      'active': 'Aktywna',
+      'inactive': 'Nieaktywna',
+      'activate': 'Aktywuj',
+      'deactivate': 'Dezaktywuj',
+      'delete': 'Usuń',
+      'confirm_delete': 'Potwierdź usunięcie',
+      'delete_category': 'Usuń kategorię',
+      'category_deleted': 'Kategoria usunięta pomyślnie',
+      'items': 'pozycje',
+      'icon': 'Ikona',
+      'category_names': 'Nazwy kategorii',
+      'display_order': 'Kolejność wyświetlania',
+      'add_item': 'Dodaj pozycję',
+      'edit_item': 'Edytuj pozycję',
+      'item_deleted': 'Pozycja usunięta pomyślnie',
+      'add_notification': 'Dodaj powiadomienie',
+      'edit_notification': 'Edytuj powiadomienie',
+      'scheduled': 'Zaplanowane',
+      'expired': 'Wygasłe',
+      'no_active_notifications': 'Brak aktywnych powiadomień',
+      'no_scheduled_notifications': 'Brak zaplanowanych powiadomień',
+      'no_expired_notifications': 'Brak wygasłych powiadomień',
+      'pinned': 'Przypięte',
+      'notification_deleted': 'Powiadomienie usunięte pomyślnie',
+      'show_as_banner': 'Pokaż jako baner',
+      'show_in_tab': 'Pokaż w zakładce',
+      'pin_notification': 'Przypnij powiadomienie',
+      'description': 'Opis',
+      'follow_us': 'Śledź nas',
+      'about_us': 'O nas',
+      'location': 'Lokalizacja',
     },
   };
 
+  // KRYTYCZNE: Zawsze używaj non-null wartości
   Locale _currentLocale = const Locale('en', 'US');
-  bool _isLoading = false;
+  bool _isLoading = true;
 
-  // Getters
+  // Getters z gwarancją non-null
   Locale get currentLocale => _currentLocale;
   String get currentLanguageCode => _currentLocale.languageCode;
   List<Locale> get supportedLocales => _supportedLocales;
   bool get isLoading => _isLoading;
 
   LanguageProvider() {
+    print('🌍 [LanguageProvider] Initializing...');
     _loadSavedLocale();
   }
 
@@ -194,39 +354,51 @@ class LanguageProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      print('🌍 [LanguageProvider] Loading saved locale...');
       final prefs = await SharedPreferences.getInstance();
       final savedLocaleCode = prefs.getString(_localeKey);
 
       if (savedLocaleCode != null) {
+        print('🌍 [LanguageProvider] Found saved locale: $savedLocaleCode');
         final locale = _supportedLocales.firstWhere(
               (locale) => locale.languageCode == savedLocaleCode,
           orElse: () => const Locale('en', 'US'),
         );
         _currentLocale = locale;
       } else {
+        print('🌍 [LanguageProvider] No saved locale, using system locale...');
         // Try to use system locale
         _currentLocale = _getSystemLocale();
       }
+
+      print('🌍 [LanguageProvider] Current locale set to: $_currentLocale');
     } catch (e) {
-      print('Error loading saved locale: $e');
-      _currentLocale = const Locale('en', 'US');
+      print('❌ [LanguageProvider] Error loading saved locale: $e');
+      _currentLocale = const Locale('en', 'US'); // Zawsze ustaw wartość domyślną
     } finally {
       _isLoading = false;
       notifyListeners();
+      print('✅ [LanguageProvider] Initialization complete');
     }
   }
 
   // Get system locale if supported
   Locale _getSystemLocale() {
-    final systemLocale = WidgetsBinding.instance.window.locale;
+    try {
+      final systemLocale = WidgetsBinding.instance.window.locale;
+      print('🌍 [LanguageProvider] System locale: $systemLocale');
 
-    // Check if system locale is supported
-    final supportedLocale = _supportedLocales.firstWhere(
-          (locale) => locale.languageCode == systemLocale.languageCode,
-      orElse: () => const Locale('en', 'US'),
-    );
+      // Check if system locale is supported
+      final supportedLocale = _supportedLocales.firstWhere(
+            (locale) => locale.languageCode == systemLocale.languageCode,
+        orElse: () => const Locale('en', 'US'),
+      );
 
-    return supportedLocale;
+      return supportedLocale;
+    } catch (e) {
+      print('⚠️ [LanguageProvider] Error getting system locale: $e');
+      return const Locale('en', 'US');
+    }
   }
 
   // Save locale to preferences
@@ -234,17 +406,20 @@ class LanguageProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_localeKey, locale.languageCode);
+      print('💾 [LanguageProvider] Saved locale: ${locale.languageCode}');
     } catch (e) {
-      print('Error saving locale: $e');
+      print('❌ [LanguageProvider] Error saving locale: $e');
     }
   }
 
   // Set locale
   Future<void> setLocale(Locale locale) async {
     if (!_supportedLocales.contains(locale)) {
-      throw Exception('Unsupported locale: $locale');
+      print('⚠️ [LanguageProvider] Unsupported locale: $locale, using default');
+      locale = const Locale('en', 'US');
     }
 
+    print('🌍 [LanguageProvider] Setting locale to: $locale');
     _currentLocale = locale;
     await _saveLocale(locale);
     notifyListeners();
@@ -252,6 +427,7 @@ class LanguageProvider with ChangeNotifier {
 
   // Set locale by language code
   Future<void> setLanguageCode(String languageCode) async {
+    print('🌍 [LanguageProvider] Setting language code: $languageCode');
     final locale = _supportedLocales.firstWhere(
           (locale) => locale.languageCode == languageCode,
       orElse: () => const Locale('en', 'US'),

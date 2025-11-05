@@ -194,7 +194,17 @@ class RestaurantMenuApp extends StatelessWidget {
 
         // Safely get values with fallbacks
         final currentLocale = languageProvider.currentLocale;
-        final supportedLocales = List<Locale>.from(languageProvider.supportedLocales);
+        final supportedLocales = languageProvider.supportedLocales.toList();
+
+        // Validate
+        if (supportedLocales.isEmpty) {
+          print('❌ No supported locales!');
+          return MaterialApp(
+            home: Scaffold(
+              body: Center(child: Text('Configuration Error')),
+            ),
+          );
+        }
 
         // Get app title with fallback
         String appTitle = 'Restaurant Menu';
@@ -204,13 +214,10 @@ class RestaurantMenuApp extends StatelessWidget {
             appTitle = name;
           }
         } catch (e) {
-          print('⚠️ Error getting restaurant name: $e, using default');
+          print('⚠️ Error getting restaurant name: $e');
         }
 
-        print('📱 Building MaterialApp:');
-        print('   - Title: $appTitle');
-        print('   - Current locale: $currentLocale');
-        print('   - Supported locales: ${supportedLocales.length}');
+        print('📱 Building MaterialApp: Title=$appTitle, Locale=$currentLocale');
 
         return MaterialApp(
           title: appTitle,
@@ -221,7 +228,7 @@ class RestaurantMenuApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.light,
 
-          // Localization - All values guaranteed non-null
+          // Localization
           locale: currentLocale,
           supportedLocales: supportedLocales,
           localizationsDelegates: const [
@@ -230,40 +237,45 @@ class RestaurantMenuApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
 
-          // CRITICAL: Add locale resolution callback to handle unsupported locales
+          // Locale resolution with error handling
           localeResolutionCallback: (locale, supportedLocales) {
-            print('🌍 Resolving locale: $locale');
+            try {
+              print('🌍 Resolving locale: $locale');
 
-            // Check if the current locale is supported
-            if (locale != null) {
+              if (locale == null || supportedLocales.isEmpty) {
+                print('⚠️ Invalid locale data');
+                return const Locale('en');
+              }
+
+              // Match by language code
               for (final supportedLocale in supportedLocales) {
                 if (supportedLocale.languageCode == locale.languageCode) {
                   print('✅ Using locale: $supportedLocale');
                   return supportedLocale;
                 }
               }
-            }
 
-            // If not supported, return first supported locale (English)
-            print('⚠️ Locale not supported, using default: ${supportedLocales.first}');
-            return supportedLocales.first;
+              print('⚠️ Locale not supported, using: ${supportedLocales.first}');
+              return supportedLocales.first;
+            } catch (e) {
+              print('❌ Error in localeResolutionCallback: $e');
+              return const Locale('en');
+            }
           },
 
-          // Navigation
+          // Navigation with error handling
           initialRoute: AppRoutes.menu,
           onGenerateRoute: (settings) {
-            print('🧭 Generating route: ${settings.name}');
             try {
+              print('🧭 Generating route: ${settings.name}');
               return AppRoutes.generateRoute(settings);
-            } catch (e) {
+            } catch (e, stackTrace) {
               print('❌ Error generating route: $e');
-              // Return error page
+              print('Stack trace: $stackTrace');
               return MaterialPageRoute(
                 builder: (_) => Scaffold(
                   appBar: AppBar(title: const Text('Error')),
-                  body: Center(
-                    child: Text('Navigation Error: $e'),
-                  ),
+                  body: Center(child: Text('Navigation Error: $e')),
                 ),
               );
             }
@@ -275,14 +287,24 @@ class RestaurantMenuApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => Scaffold(
                 appBar: AppBar(title: const Text('404')),
-                body: const Center(
-                  child: Text('Page not found'),
-                ),
+                body: const Center(child: Text('Page not found')),
               ),
             );
           },
 
-          // Error handling - MOVED OUTSIDE builder to avoid rebuilding
+          // Error builder
+          builder: (context, widget) {
+            // Add error boundary
+            ErrorWidget.builder = (FlutterErrorDetails details) {
+              print('❌ Widget error: ${details.exception}');
+              return Scaffold(
+                body: Center(
+                  child: Text('Error: ${details.exception}'),
+                ),
+              );
+            };
+            return widget ?? const SizedBox.shrink();
+          },
         );
       },
     );

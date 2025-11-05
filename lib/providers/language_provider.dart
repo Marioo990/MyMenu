@@ -6,15 +6,15 @@ class LanguageProvider with ChangeNotifier {
 
   // Supported locales - const to ensure compile-time constant
   static const List<Locale> _supportedLocales = [
-    Locale('en', 'US'),
-    Locale('pl', 'PL'),
-    Locale('de', 'DE'),
-    Locale('es', 'ES'),
-    Locale('fr', 'FR'),
+    Locale('en'),  // Usunięto country code
+    Locale('pl'),  // Usunięto 'PL'
+    Locale('de'),  // Usunięto 'DE'
+    Locale('es'),  // Usunięto 'ES'
+    Locale('fr'),  // Usunięto 'FR'
   ];
 
   // CRITICAL: Always initialized with default value - never null
-  Locale _currentLocale = const Locale('en', 'US');
+  Locale _currentLocale = const Locale('en');
   bool _isLoading = true;
 
   // Getters - guaranteed non-null
@@ -39,7 +39,7 @@ class LanguageProvider with ChangeNotifier {
         print('🌍 [LanguageProvider] Found saved locale: $savedLocaleCode');
         final locale = _supportedLocales.firstWhere(
               (locale) => locale.languageCode == savedLocaleCode,
-          orElse: () => const Locale('en', 'US'),
+          orElse: () => const Locale('en'),  // Usunięto 'US'
         );
         _currentLocale = locale;
       } else {

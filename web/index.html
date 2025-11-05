@@ -140,25 +140,7 @@
 </div>
 
 <script>
-  // KRYTYCZNE: Flaga zapobiegająca podwójnej inicjalizacji
-  window.flutterLoaded = false;
-  window.flutterInitializing = false;
-
   console.log('🚀 [index.html] Script loaded');
-
-  // Obsługa błędów ładowania
-  window.addEventListener('error', function(e) {
-    console.error('❌ [index.html] Loading error:', e);
-
-    // Pokaż ekran błędu po timeout tylko jeśli Flutter się nie załadował
-    setTimeout(function() {
-      if (!window.flutterLoaded) {
-        console.error('💥 [index.html] Flutter failed to load, showing error screen');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'flex';
-      }
-    }, 15000); // 15 sekund timeout
-  });
 
   // PWA Install Prompt
   let deferredPrompt;
@@ -167,9 +149,6 @@
     console.log('📱 [index.html] PWA install prompt available');
     e.preventDefault();
     deferredPrompt = e;
-    if (window.flutter) {
-      window.flutter.postMessage('install-available');
-    }
   });
 
   window.addEventListener('appinstalled', () => {
@@ -191,84 +170,47 @@
       });
     }
   };
-</script>
 
-<!-- Firebase SDK - Kompatybilne wersje -->
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+  // Monitor Flutter loading
+  window.addEventListener('flutter-first-frame', function() {
+    console.log('✅ [index.html] Flutter first frame rendered');
 
-<!-- Flutter initialization script -->
-<script src="flutter_bootstrap.js" async></script>
-
-<script>
-  // KRYTYCZNE: Użyj nowego API inicjalizacji z zabezpieczeniem przed podwójnym uruchomieniem
-  window.addEventListener('load', function(ev) {
-    console.log('🎬 [index.html] Window load event fired');
-
-    // Zapobiegaj podwójnej inicjalizacji
-    if (window.flutterInitializing || window.flutterLoaded) {
-      console.warn('⚠️ [index.html] Flutter already initializing or loaded, skipping...');
-      return;
-    }
-
-    window.flutterInitializing = true;
-    console.log('🚀 [index.html] Starting Flutter initialization...');
-
-    try {
-      _flutter.loader.load({
-        onEntrypointLoaded: async function(engineInitializer) {
-          try {
-            console.log('⚙️ [index.html] Entrypoint loaded, initializing engine...');
-            let appRunner = await engineInitializer.initializeEngine();
-
-            console.log('▶️ [index.html] Engine initialized, running app...');
-            await appRunner.runApp();
-
-            // Mark Flutter as loaded and hide loading screen
-            window.flutterLoaded = true;
-            window.flutterInitializing = false;
-
-            console.log('✅ [index.html] Flutter app started successfully!');
-
-            // Płynne ukrycie ekranu ładowania
-            setTimeout(() => {
-              const loadingElement = document.getElementById('loading');
-              if (loadingElement) {
-                loadingElement.style.transition = 'opacity 0.5s';
-                loadingElement.style.opacity = '0';
-                setTimeout(() => {
-                  loadingElement.style.display = 'none';
-                }, 500);
-              }
-            }, 500);
-          } catch (engineError) {
-            console.error('❌ [index.html] Error during engine initialization:', engineError);
-            window.flutterInitializing = false;
-            throw engineError;
-          }
-        }
-      });
-    } catch (loadError) {
-      console.error('❌ [index.html] Error loading Flutter:', loadError);
-      window.flutterInitializing = false;
-
-      // Pokaż ekran błędu
+    // Hide loading screen with fade effect
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+      loadingElement.style.transition = 'opacity 0.5s';
+      loadingElement.style.opacity = '0';
       setTimeout(() => {
-        if (!window.flutterLoaded) {
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('error').style.display = 'flex';
-        }
-      }, 1000);
+        loadingElement.style.display = 'none';
+      }, 500);
     }
   });
+
+  // Show error screen if loading takes too long
+  setTimeout(function() {
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement && loadingElement.style.display !== 'none') {
+      console.error('💥 [index.html] Flutter failed to load in time');
+      loadingElement.style.display = 'none';
+      document.getElementById('error').style.display = 'flex';
+    }
+  }, 30000); // 30 seconds timeout
 
   // Debug: Log any unhandled promise rejections
   window.addEventListener('unhandledrejection', function(event) {
     console.error('❌ [index.html] Unhandled promise rejection:', event.reason);
   });
 </script>
+
+<!-- Firebase SDK - Compatible versions -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+
+<!-- Flutter initialization - let flutter_bootstrap.js handle it automatically -->
+<script src="flutter_bootstrap.js" async></script>
+
 </body>
 </html>

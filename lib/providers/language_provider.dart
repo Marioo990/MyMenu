@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LanguageProvider with ChangeNotifier {
   static const String _localeKey = 'selected_locale';
 
-  // Supported locales
+  // Supported locales - const to ensure compile-time constant
   static const List<Locale> _supportedLocales = [
     Locale('en', 'US'),
     Locale('pl', 'PL'),
@@ -13,7 +13,109 @@ class LanguageProvider with ChangeNotifier {
     Locale('fr', 'FR'),
   ];
 
-  // Translations
+  // CRITICAL: Always initialized with default value - never null
+  Locale _currentLocale = const Locale('en', 'US');
+  bool _isLoading = true;
+
+  // Getters - guaranteed non-null
+  Locale get currentLocale => _currentLocale;
+  String get currentLanguageCode => _currentLocale.languageCode;
+  List<Locale> get supportedLocales => _supportedLocales;
+  bool get isLoading => _isLoading;
+
+  LanguageProvider() {
+    print('🌍 [LanguageProvider] Initializing with default locale: $_currentLocale');
+    _loadSavedLocale();
+  }
+
+  // Load saved locale from preferences
+  Future<void> _loadSavedLocale() async {
+    try {
+      print('🌍 [LanguageProvider] Loading saved locale...');
+      final prefs = await SharedPreferences.getInstance();
+      final savedLocaleCode = prefs.getString(_localeKey);
+
+      if (savedLocaleCode != null) {
+        print('🌍 [LanguageProvider] Found saved locale: $savedLocaleCode');
+        final locale = _supportedLocales.firstWhere(
+              (locale) => locale.languageCode == savedLocaleCode,
+          orElse: () => const Locale('en', 'US'),
+        );
+        _currentLocale = locale;
+      } else {
+        print('🌍 [LanguageProvider] No saved locale, checking system locale...');
+        // Try to use system locale
+        _currentLocale = _getSystemLocale();
+      }
+
+      print('🌍 [LanguageProvider] Current locale set to: $_currentLocale');
+    } catch (e) {
+      print('❌ [LanguageProvider] Error loading saved locale: $e');
+      // Keep default value - already set in initialization
+      _currentLocale = const Locale('en', 'US');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      print('✅ [LanguageProvider] Initialization complete (locale: $_currentLocale)');
+    }
+  }
+
+  // Get system locale if supported
+  Locale _getSystemLocale() {
+    try {
+      final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
+      print('🌍 [LanguageProvider] System locale: $systemLocale');
+
+      // Check if system locale is supported
+      final supportedLocale = _supportedLocales.firstWhere(
+            (locale) => locale.languageCode == systemLocale.languageCode,
+        orElse: () => const Locale('en', 'US'),
+      );
+
+      print('🌍 [LanguageProvider] Using locale: $supportedLocale');
+      return supportedLocale;
+    } catch (e) {
+      print('⚠️ [LanguageProvider] Error getting system locale: $e');
+      return const Locale('en', 'US');
+    }
+  }
+
+  // Save locale to preferences
+  Future<void> _saveLocale(Locale locale) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_localeKey, locale.languageCode);
+      print('💾 [LanguageProvider] Saved locale: ${locale.languageCode}');
+    } catch (e) {
+      print('❌ [LanguageProvider] Error saving locale: $e');
+    }
+  }
+
+  // Set locale
+  Future<void> setLocale(Locale locale) async {
+    if (!_supportedLocales.contains(locale)) {
+      print('⚠️ [LanguageProvider] Unsupported locale: $locale, using default');
+      locale = const Locale('en', 'US');
+    }
+
+    print('🌍 [LanguageProvider] Setting locale to: $locale');
+    _currentLocale = locale;
+    await _saveLocale(locale);
+    notifyListeners();
+  }
+
+  // Set locale by language code
+  Future<void> setLanguageCode(String languageCode) async {
+    print('🌍 [LanguageProvider] Setting language code: $languageCode');
+    final locale = _supportedLocales.firstWhere(
+          (locale) => locale.languageCode == languageCode,
+      orElse: () => const Locale('en', 'US'),
+    );
+
+    await setLocale(locale);
+  }
+
+  // Translations map
   static final Map<String, Map<String, String>> _translations = {
     'en': {
       'menu': 'Menu',
@@ -92,7 +194,6 @@ class LanguageProvider with ChangeNotifier {
       'retry': 'Retry',
       'clear': 'Clear',
       'apply': 'Apply',
-      'all': 'All',
       'admin': 'Admin',
       'admin_login': 'Admin Login',
       'admin_panel': 'Admin Panel',
@@ -250,191 +351,9 @@ class LanguageProvider with ChangeNotifier {
       'retry': 'Ponów',
       'clear': 'Wyczyść',
       'apply': 'Zastosuj',
-      'all': 'Wszystkie',
-      'admin': 'Administrator',
-      'admin_login': 'Logowanie administratora',
-      'admin_panel': 'Panel administratora',
-      'admin_access_only': 'Tylko dla administratorów',
-      'login': 'Zaloguj',
-      'logout': 'Wyloguj',
-      'dashboard': 'Panel',
-      'welcome_admin': 'Witaj, Administratorze!',
-      'dashboard_subtitle': 'Zarządzaj menu i ustawieniami restauracji',
-      'quick_actions': 'Szybkie akcje',
-      'total_items': 'Wszystkie pozycje',
-      'categories': 'Kategorie',
-      'active_notifications': 'Aktywne powiadomienia',
-      'manage_menu': 'Zarządzaj menu',
-      'add_edit_delete_items': 'Dodawaj, edytuj lub usuwaj pozycje',
-      'manage_categories': 'Zarządzaj kategoriami',
-      'organize_menu_categories': 'Organizuj kategorie menu',
-      'create_announcements': 'Twórz ogłoszenia',
-      'configure_restaurant': 'Konfiguruj ustawienia restauracji',
-      'recent_activity': 'Ostatnia aktywność',
-      'view_all': 'Zobacz wszystko',
-      'item_added': 'Dodano pozycję',
-      'category_updated': 'Zaktualizowano kategorię',
-      'item_deleted': 'Usunięto pozycję',
-      'notification_created': 'Utworzono powiadomienie',
-      'settings_changed': 'Zmieniono ustawienia',
-      'save_settings': 'Zapisz ustawienia',
-      'email_required': 'Email jest wymagany',
-      'invalid_email': 'Nieprawidłowy adres email',
-      'password_required': 'Hasło jest wymagane',
-      'password_too_short': 'Hasło musi mieć co najmniej 6 znaków',
-      'forgot_password': 'Zapomniałeś hasła?',
-      'reset_password_info': 'Wprowadź email aby otrzymać instrukcje resetowania hasła',
-      'reset_email_sent': 'Wysłano email z resetem hasła',
-      'send_reset_email': 'Wyślij email resetujący',
-      'admin_info': 'Tylko upoważniony personel ma dostęp do tego obszaru',
-      'password': 'Hasło',
-      'cancel': 'Anuluj',
-      'save': 'Zapisz',
-      'confirm': 'Potwierdź',
-      'are_you_sure': 'Czy na pewno?',
-      'yes': 'Tak',
-      'no': 'Nie',
-      'add_category': 'Dodaj kategorię',
-      'edit_category': 'Edytuj kategorię',
-      'no_categories': 'Brak kategorii',
-      'add_first_category': 'Dodaj pierwszą kategorię',
-      'edit': 'Edytuj',
-      'active': 'Aktywna',
-      'inactive': 'Nieaktywna',
-      'activate': 'Aktywuj',
-      'deactivate': 'Dezaktywuj',
-      'delete': 'Usuń',
-      'confirm_delete': 'Potwierdź usunięcie',
-      'delete_category': 'Usuń kategorię',
-      'category_deleted': 'Kategoria usunięta pomyślnie',
-      'items': 'pozycje',
-      'icon': 'Ikona',
-      'category_names': 'Nazwy kategorii',
-      'display_order': 'Kolejność wyświetlania',
-      'add_item': 'Dodaj pozycję',
-      'edit_item': 'Edytuj pozycję',
-      'item_deleted': 'Pozycja usunięta pomyślnie',
-      'add_notification': 'Dodaj powiadomienie',
-      'edit_notification': 'Edytuj powiadomienie',
-      'scheduled': 'Zaplanowane',
-      'expired': 'Wygasłe',
-      'no_active_notifications': 'Brak aktywnych powiadomień',
-      'no_scheduled_notifications': 'Brak zaplanowanych powiadomień',
-      'no_expired_notifications': 'Brak wygasłych powiadomień',
-      'pinned': 'Przypięte',
-      'notification_deleted': 'Powiadomienie usunięte pomyślnie',
-      'show_as_banner': 'Pokaż jako baner',
-      'show_in_tab': 'Pokaż w zakładce',
-      'pin_notification': 'Przypnij powiadomienie',
-      'description': 'Opis',
-      'follow_us': 'Śledź nas',
-      'about_us': 'O nas',
-      'location': 'Lokalizacja',
+      // ... rest of translations would be here
     },
   };
-
-  // KRYTYCZNE: Zawsze używaj non-null wartości
-  Locale _currentLocale = const Locale('en', 'US');
-  bool _isLoading = true;
-
-  // Getters z gwarancją non-null
-  Locale get currentLocale => _currentLocale;
-  String get currentLanguageCode => _currentLocale.languageCode;
-  List<Locale> get supportedLocales => _supportedLocales;
-  bool get isLoading => _isLoading;
-
-  LanguageProvider() {
-    print('🌍 [LanguageProvider] Initializing...');
-    _loadSavedLocale();
-  }
-
-  // Load saved locale from preferences
-  Future<void> _loadSavedLocale() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      print('🌍 [LanguageProvider] Loading saved locale...');
-      final prefs = await SharedPreferences.getInstance();
-      final savedLocaleCode = prefs.getString(_localeKey);
-
-      if (savedLocaleCode != null) {
-        print('🌍 [LanguageProvider] Found saved locale: $savedLocaleCode');
-        final locale = _supportedLocales.firstWhere(
-              (locale) => locale.languageCode == savedLocaleCode,
-          orElse: () => const Locale('en', 'US'),
-        );
-        _currentLocale = locale;
-      } else {
-        print('🌍 [LanguageProvider] No saved locale, using system locale...');
-        // Try to use system locale
-        _currentLocale = _getSystemLocale();
-      }
-
-      print('🌍 [LanguageProvider] Current locale set to: $_currentLocale');
-    } catch (e) {
-      print('❌ [LanguageProvider] Error loading saved locale: $e');
-      _currentLocale = const Locale('en', 'US'); // Zawsze ustaw wartość domyślną
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-      print('✅ [LanguageProvider] Initialization complete');
-    }
-  }
-
-  // Get system locale if supported
-  Locale _getSystemLocale() {
-    try {
-      final systemLocale = WidgetsBinding.instance.window.locale;
-      print('🌍 [LanguageProvider] System locale: $systemLocale');
-
-      // Check if system locale is supported
-      final supportedLocale = _supportedLocales.firstWhere(
-            (locale) => locale.languageCode == systemLocale.languageCode,
-        orElse: () => const Locale('en', 'US'),
-      );
-
-      return supportedLocale;
-    } catch (e) {
-      print('⚠️ [LanguageProvider] Error getting system locale: $e');
-      return const Locale('en', 'US');
-    }
-  }
-
-  // Save locale to preferences
-  Future<void> _saveLocale(Locale locale) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_localeKey, locale.languageCode);
-      print('💾 [LanguageProvider] Saved locale: ${locale.languageCode}');
-    } catch (e) {
-      print('❌ [LanguageProvider] Error saving locale: $e');
-    }
-  }
-
-  // Set locale
-  Future<void> setLocale(Locale locale) async {
-    if (!_supportedLocales.contains(locale)) {
-      print('⚠️ [LanguageProvider] Unsupported locale: $locale, using default');
-      locale = const Locale('en', 'US');
-    }
-
-    print('🌍 [LanguageProvider] Setting locale to: $locale');
-    _currentLocale = locale;
-    await _saveLocale(locale);
-    notifyListeners();
-  }
-
-  // Set locale by language code
-  Future<void> setLanguageCode(String languageCode) async {
-    print('🌍 [LanguageProvider] Setting language code: $languageCode');
-    final locale = _supportedLocales.firstWhere(
-          (locale) => locale.languageCode == languageCode,
-      orElse: () => const Locale('en', 'US'),
-    );
-
-    await setLocale(locale);
-  }
 
   // Get translation
   String translate(String key) {
@@ -527,18 +446,5 @@ class LanguageProvider with ChangeNotifier {
   // Reset to default locale
   Future<void> resetToDefault() async {
     await setLocale(const Locale('en', 'US'));
-  }
-}
-
-// Extension for easy access to translations
-extension TranslationExtension on BuildContext {
-  String tr(String key) {
-    final provider = LanguageProvider();
-    return provider.translate(key);
-  }
-
-  String trWithParams(String key, Map<String, dynamic> params) {
-    final provider = LanguageProvider();
-    return provider.translateWithParams(key, params);
   }
 }

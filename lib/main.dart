@@ -12,17 +12,7 @@ import 'providers/language_provider.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 
-// Flaga zapobiegająca podwójnej inicjalizacji
-bool _isInitialized = false;
-
 void main() async {
-  // Zapobieganie podwójnej inicjalizacji
-  if (_isInitialized) {
-    print('⚠️ App already initialized, skipping...');
-    return;
-  }
-  _isInitialized = true;
-
   WidgetsFlutterBinding.ensureInitialized();
 
   print('🚀 Starting app initialization...');
@@ -130,8 +120,8 @@ void main() async {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () {
-                          _isInitialized = false; // Reset flagi
-                          main(); // Restart app
+                          // Reload the page
+                          main();
                         },
                         icon: const Icon(Icons.refresh),
                         label: const Text('Retry'),
@@ -163,151 +153,136 @@ class RestaurantMenuApp extends StatelessWidget {
   Widget build(BuildContext context) {
     print('🎨 Building RestaurantMenuApp');
 
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, _) {
-        // KRYTYCZNE: Sprawdź czy languageProvider jest zainicjalizowany
-        if (languageProvider.currentLocale == null) {
-          print('⚠️ LanguageProvider not initialized yet, waiting...');
+    return Consumer2<LanguageProvider, SettingsProvider>(
+      builder: (context, languageProvider, settingsProvider, _) {
+        // CRITICAL: Wait for both providers to initialize
+        final languageReady = !languageProvider.isLoading;
+        final settingsReady = !settingsProvider.isLoading;
+
+        print('📊 Provider status:');
+        print('   - Language ready: $languageReady (locale: ${languageProvider.currentLocale})');
+        print('   - Settings ready: $settingsReady');
+
+        // Show loading screen while initializing
+        if (!languageReady || !settingsReady) {
+          print('⏳ Waiting for providers to initialize...');
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('en', 'US')],
-            home: const Scaffold(
+            home: Scaffold(
               body: Center(
-                child: CircularProgressIndicator(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 24),
+                    Text(
+                      !languageReady ? 'Loading language...' : 'Loading settings...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         }
 
-        print('   Language: ${languageProvider.currentLanguageCode}');
+        // Both providers are ready, build the app
+        print('✅ All providers ready, building main app');
 
-        return Consumer<SettingsProvider>(
-          builder: (context, settingsProvider, _) {
-            // Check if still loading
-            if (settingsProvider.isLoading) {
-              print('⏳ Settings still loading...');
-              return MaterialApp(
-                debugShowCheckedModeBanner: false,
-                localizationsDelegates: const [
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: languageProvider.supportedLocales,
-                home: Scaffold(
+        // Safely get values with fallbacks
+        final currentLocale = languageProvider.currentLocale;
+        final supportedLocales = List<Locale>.from(languageProvider.supportedLocales);
+
+        // Get app title with fallback
+        String appTitle = 'Restaurant Menu';
+        try {
+          final name = settingsProvider.restaurantName;
+          if (name.isNotEmpty) {
+            appTitle = name;
+          }
+        } catch (e) {
+          print('⚠️ Error getting restaurant name: $e, using default');
+        }
+
+        print('📱 Building MaterialApp:');
+        print('   - Title: $appTitle');
+        print('   - Current locale: $currentLocale');
+        print('   - Supported locales: ${supportedLocales.length}');
+
+        return MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+
+          // Theme
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.light,
+
+          // Localization - All values guaranteed non-null
+          locale: currentLocale,
+          supportedLocales: supportedLocales,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+
+          // CRITICAL: Add locale resolution callback to handle unsupported locales
+          localeResolutionCallback: (locale, supportedLocales) {
+            print('🌍 Resolving locale: $locale');
+
+            // Check if the current locale is supported
+            if (locale != null) {
+              for (final supportedLocale in supportedLocales) {
+                if (supportedLocale.languageCode == locale.languageCode) {
+                  print('✅ Using locale: $supportedLocale');
+                  return supportedLocale;
+                }
+              }
+            }
+
+            // If not supported, return first supported locale (English)
+            print('⚠️ Locale not supported, using default: ${supportedLocales.first}');
+            return supportedLocales.first;
+          },
+
+          // Navigation
+          initialRoute: AppRoutes.menu,
+          onGenerateRoute: (settings) {
+            print('🧭 Generating route: ${settings.name}');
+            try {
+              return AppRoutes.generateRoute(settings);
+            } catch (e) {
+              print('❌ Error generating route: $e');
+              // Return error page
+              return MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
                   body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Loading settings...',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Text('Navigation Error: $e'),
                   ),
                 ),
               );
             }
+          },
 
-            if (settingsProvider.error != null) {
-              print('❌ Settings error: ${settingsProvider.error}');
-            }
-
-            print('✅ Building main app with settings loaded');
-
-            // KRYTYCZNE: Bezpieczne pobieranie danych z zabezpieczeniami
-            String appTitle = 'Restaurant Menu'; // Domyślna wartość
-            try {
-              final name = settingsProvider.restaurantName;
-              if (name.isNotEmpty) {
-                appTitle = name;
-              }
-            } catch (e) {
-              print('⚠️ Error getting restaurant name: $e');
-            }
-
-            // Sprawdź supportedLocales
-            final locales = languageProvider.supportedLocales;
-            if (locales.isEmpty) {
-              print('⚠️ No supported locales, using default');
-            }
-
-            print('📱 Building MaterialApp with:');
-            print('   - Title: $appTitle');
-            print('   - Locale: ${languageProvider.currentLocale}');
-            print('   - Supported locales: ${locales.length}');
-
-            return MaterialApp(
-              title: appTitle,
-              debugShowCheckedModeBanner: false,
-
-              // Theme
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: ThemeMode.light,
-
-              // Localization - KRYTYCZNE: Wszystkie wartości muszą być non-null
-              locale: languageProvider.currentLocale ?? const Locale('en', 'US'),
-              supportedLocales: locales.isNotEmpty
-                  ? locales
-                  : const [Locale('en', 'US')],
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-
-              // Navigation
-              initialRoute: AppRoutes.menu,
-              onGenerateRoute: AppRoutes.generateRoute,
-
-              // Error handling
-              builder: (context, widget) {
-                // Catch any widget build errors
-                ErrorWidget.builder = (FlutterErrorDetails details) {
-                  print('🔴 Widget Error: ${details.exception}');
-                  return Container(
-                    color: Colors.red.shade50,
-                    padding: const EdgeInsets.all(20),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error, size: 48, color: Colors.red),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Widget Error',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            details.exception.toString(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                };
-                return widget ?? const SizedBox();
-              },
+          // Unknown route handler
+          onUnknownRoute: (settings) {
+            print('❓ Unknown route: ${settings.name}');
+            return MaterialPageRoute(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('404')),
+                body: const Center(
+                  child: Text('Page not found'),
+                ),
+              ),
             );
           },
+
+          // Error handling - MOVED OUTSIDE builder to avoid rebuilding
         );
       },
     );

@@ -12,7 +12,7 @@ import 'providers/language_provider.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 import 'screens/public/menu_screen.dart';
-
+import 'config/routes.dart';
 
 
 import 'screens/public/info_screen.dart';
@@ -257,38 +257,39 @@ class _RestaurantMenuAppCore extends StatelessWidget {
         return supportedLocales.first;
       },
       initialRoute: '/',
-      onGenerateRoute: (settings) {
-        print('🧭 Route: ${settings.name}');
-
-        switch (settings.name) {
-          case '/':
-            return MaterialPageRoute(
-              builder: (_) => const MenuScreen(), // Zmienione z SimpleMenuScreen
-              settings: settings,
-            );
-
-          case '/info':
-            return MaterialPageRoute(
-              builder: (_) => const InfoScreen(),
-              settings: settings,
-            );
-
-          case '/admin':
-            return MaterialPageRoute(
-              builder: (_) => const AdminLoginScreen(),
-              settings: settings,
-            );
-
-          default:
-            return MaterialPageRoute(
-              builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('404')),
-                body: const Center(child: Text('Page not found')),
-              ),
-              settings: settings,
-            );
-        }
-      },
+      onGenerateRoute: AppRoutes.generateRoute,
+      // onGenerateRoute: (settings) {
+      //   print('🧭 Route: ${settings.name}');
+      //
+      //   switch (settings.name) {
+      //     case '/':
+      //       return MaterialPageRoute(
+      //         builder: (_) => const MenuScreen(), // Zmienione z SimpleMenuScreen
+      //         settings: settings,
+      //       );
+      //
+      //     case '/info':
+      //       return MaterialPageRoute(
+      //         builder: (_) => const InfoScreen(),
+      //         settings: settings,
+      //       );
+      //
+      //     case '/admin':
+      //       return MaterialPageRoute(
+      //         builder: (_) => const AdminLoginScreen(),
+      //         settings: settings,
+      //       );
+      //
+      //     default:
+      //       return MaterialPageRoute(
+      //         builder: (_) => Scaffold(
+      //           appBar: AppBar(title: const Text('404')),
+      //           body: const Center(child: Text('Page not found')),
+      //         ),
+      //         settings: settings,
+      //       );
+      //   }
+      // },
     );
   }
 }

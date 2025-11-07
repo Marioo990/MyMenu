@@ -103,11 +103,10 @@ class AppRoutes {
       }) {
     return MaterialPageRoute(
       builder: (context) {
-        if (requiresAuth) {
-          // Check authentication
-          // This would be replaced with actual auth check
-          return AuthGuard(child: page);
-        }
+        // Remove AuthGuard check - it may cause null issues
+        // if (requiresAuth) {
+        //   return AuthGuard(child: page);
+        // }
         return page;
       },
       settings: settings,
@@ -177,60 +176,60 @@ class AppRoutes {
   }
 }
 // Auth Guard Widget
-class AuthGuard extends StatefulWidget {
-  final Widget child;
-
-  const AuthGuard({
-    super.key,
-    required this.child,
-  });
-
-  @override
-  State<AuthGuard> createState() => _AuthGuardState();
-}
-
-class _AuthGuardState extends State<AuthGuard> {
-  @override
-  Widget build(BuildContext context) {
-    // Check if user is authenticated
-    // This would be replaced with actual auth check using Provider
-    return FutureBuilder<bool>(
-      future: _checkAuth(context),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (snapshot.data == true) {
-          return widget.child;
-        }
-
-        // Redirect to login
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            AppRoutes.navigateAndReplace(
-              context,
-              AppRoutes.adminLogin,
-            );
-          }
-        });
-
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool> _checkAuth(BuildContext context) async {
-    // Implementation would check Firebase Auth
-    await Future.delayed(const Duration(milliseconds: 100));
-    return false; // For now, always redirect to login
-  }
-}
+// class AuthGuard extends StatefulWidget {
+//   final Widget child;
+//
+//   const AuthGuard({
+//     super.key,
+//     required this.child,
+//   });
+//
+//   @override
+//   State<AuthGuard> createState() => _AuthGuardState();
+// }
+// //
+// class _AuthGuardState extends State<AuthGuard> {
+//   @override
+//   Widget build(BuildContext context) {
+//     // Check if user is authenticated
+//     // This would be replaced with actual auth check using Provider
+//     return FutureBuilder<bool>(
+//       future: _checkAuth(context),
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting) {
+//           return const Scaffold(
+//             body: Center(
+//               child: CircularProgressIndicator(),
+//             ),
+//           );
+//         }
+//
+//         if (snapshot.data == true) {
+//           return widget.child;
+//         }
+//
+//         // Redirect to login
+//         WidgetsBinding.instance.addPostFrameCallback((_) {
+//           if (mounted) {
+//             AppRoutes.navigateAndReplace(
+//               context,
+//               AppRoutes.adminLogin,
+//             );
+//           }
+//         });
+//
+//         return const Scaffold(
+//           body: Center(
+//             child: CircularProgressIndicator(),
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   Future<bool> _checkAuth(BuildContext context) async {
+//     // Implementation would check Firebase Auth
+//     await Future.delayed(const Duration(milliseconds: 100));
+//     return false; // For now, always redirect to login
+//   }
+// }

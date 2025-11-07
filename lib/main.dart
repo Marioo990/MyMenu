@@ -4,14 +4,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'config/theme.dart';
-import 'config/routes.dart';
+// import 'config/routes.dart';
 import 'providers/menu_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/language_provider.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
+import 'screens/public/menu_screen.dart';
 
+
+
+import 'screens/public/info_screen.dart';
+import 'screens/admin/admin_login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -148,14 +153,12 @@ void main() async {
 
 class RestaurantMenuApp extends StatelessWidget {
   const RestaurantMenuApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     print('🎨 Building RestaurantMenuApp');
 
     return Consumer2<LanguageProvider, SettingsProvider>(
       builder: (context, languageProvider, settingsProvider, _) {
-        // CRITICAL: Wait for both providers to initialize
         final languageReady = !languageProvider.isLoading;
         final settingsReady = !settingsProvider.isLoading;
 
@@ -163,7 +166,6 @@ class RestaurantMenuApp extends StatelessWidget {
         print('   - Language ready: $languageReady (locale: ${languageProvider.currentLocale})');
         print('   - Settings ready: $settingsReady');
 
-        // Show loading screen while initializing
         if (!languageReady || !settingsReady) {
           print('⏳ Waiting for providers to initialize...');
           return MaterialApp(
@@ -177,10 +179,7 @@ class RestaurantMenuApp extends StatelessWidget {
                     const SizedBox(height: 24),
                     Text(
                       !languageReady ? 'Loading language...' : 'Loading settings...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -189,24 +188,12 @@ class RestaurantMenuApp extends StatelessWidget {
           );
         }
 
-        // Both providers are ready, build the app
         print('✅ All providers ready, building main app');
 
-        // Safely get values with fallbacks
+        // Get values ONCE and don't rebuild on stream changes
         final currentLocale = languageProvider.currentLocale;
         final supportedLocales = languageProvider.supportedLocales.toList();
 
-        // Validate
-        if (supportedLocales.isEmpty) {
-          print('❌ No supported locales!');
-          return MaterialApp(
-            home: Scaffold(
-              body: Center(child: Text('Configuration Error')),
-            ),
-          );
-        }
-
-        // Get app title with fallback
         String appTitle = 'Restaurant Menu';
         try {
           final name = settingsProvider.restaurantName;
@@ -219,93 +206,88 @@ class RestaurantMenuApp extends StatelessWidget {
 
         print('📱 Building MaterialApp: Title=$appTitle, Locale=$currentLocale');
 
-        return MaterialApp(
-          title: appTitle,
-          debugShowCheckedModeBanner: false,
-
-          // Theme
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.light,
-
-          // Localization
-          locale: currentLocale,
+        // CRITICAL: Return MaterialApp WITHOUT rebuilding on stream changes
+        return _RestaurantMenuAppCore(
+          appTitle: appTitle,
+          currentLocale: currentLocale,
           supportedLocales: supportedLocales,
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+        );
+      },
+    );
+  }
 
-          // Locale resolution with error handling
-          localeResolutionCallback: (locale, supportedLocales) {
-            try {
-              print('🌍 Resolving locale: $locale');
+  
+}
 
-              if (locale == null || supportedLocales.isEmpty) {
-                print('⚠️ Invalid locale data');
-                return const Locale('en');
-              }
+// Separate widget to prevent rebuilds from Provider streams
+class _RestaurantMenuAppCore extends StatelessWidget {
+  final String appTitle;
+  final Locale currentLocale;
+  final List<Locale> supportedLocales;
 
-              // Match by language code
-              for (final supportedLocale in supportedLocales) {
-                if (supportedLocale.languageCode == locale.languageCode) {
-                  print('✅ Using locale: $supportedLocale');
-                  return supportedLocale;
-                }
-              }
+  const _RestaurantMenuAppCore({
+    required this.appTitle,
+    required this.currentLocale,
+    required this.supportedLocales,
+  });
 
-              print('⚠️ Locale not supported, using: ${supportedLocales.first}');
-              return supportedLocales.first;
-            } catch (e) {
-              print('❌ Error in localeResolutionCallback: $e');
-              return const Locale('en');
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: appTitle,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
+      locale: currentLocale,
+      supportedLocales: supportedLocales,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale != null) {
+          for (final supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == locale.languageCode) {
+              return supportedLocale;
             }
-          },
+          }
+        }
+        return supportedLocales.first;
+      },
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        print('🧭 Route: ${settings.name}');
 
-          // Navigation with error handling
-          initialRoute: AppRoutes.menu,
-          onGenerateRoute: (settings) {
-            try {
-              print('🧭 Generating route: ${settings.name}');
-              return AppRoutes.generateRoute(settings);
-            } catch (e, stackTrace) {
-              print('❌ Error generating route: $e');
-              print('Stack trace: $stackTrace');
-              return MaterialPageRoute(
-                builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Error')),
-                  body: Center(child: Text('Navigation Error: $e')),
-                ),
-              );
-            }
-          },
+        switch (settings.name) {
+          case '/':
+            return MaterialPageRoute(
+              builder: (_) => const MenuScreen(), // Zmienione z SimpleMenuScreen
+              settings: settings,
+            );
 
-          // Unknown route handler
-          onUnknownRoute: (settings) {
-            print('❓ Unknown route: ${settings.name}');
+          case '/info':
+            return MaterialPageRoute(
+              builder: (_) => const InfoScreen(),
+              settings: settings,
+            );
+
+          case '/admin':
+            return MaterialPageRoute(
+              builder: (_) => const AdminLoginScreen(),
+              settings: settings,
+            );
+
+          default:
             return MaterialPageRoute(
               builder: (_) => Scaffold(
                 appBar: AppBar(title: const Text('404')),
                 body: const Center(child: Text('Page not found')),
               ),
+              settings: settings,
             );
-          },
-
-          // Error builder
-          builder: (context, widget) {
-            // Add error boundary
-            ErrorWidget.builder = (FlutterErrorDetails details) {
-              print('❌ Widget error: ${details.exception}');
-              return Scaffold(
-                body: Center(
-                  child: Text('Error: ${details.exception}'),
-                ),
-              );
-            };
-            return widget ?? const SizedBox.shrink();
-          },
-        );
+        }
       },
     );
   }

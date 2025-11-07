@@ -14,6 +14,40 @@ import '../../widgets/menu/menu_item_card.dart';
 import '../../widgets/menu/search_bar.dart' as custom;
 import '../../widgets/menu/filter_chips.dart';
 
+// TEMPORARY: Simple test version
+class SimpleMenuScreen extends StatelessWidget {
+  const SimpleMenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    print('🏠 SimpleMenuScreen building...');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Menu'),
+        backgroundColor: Colors.blue,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.restaurant_menu, size: 64, color: Colors.blue),
+            const SizedBox(height: 16),
+            const Text('Menu Screen Works!', style: TextStyle(fontSize: 24)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/info');
+              },
+              child: const Text('Go to Info'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
 
@@ -49,10 +83,24 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final menuProvider = Provider.of<MenuProvider>(context);
-    final settingsProvider = Provider.of<SettingsProvider>(context);
-    final favoritesProvider = Provider.of<FavoritesProvider>(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    // Safely get providers with null checks
+    MenuProvider? menuProvider;
+    SettingsProvider? settingsProvider;
+    FavoritesProvider? favoritesProvider;
+    LanguageProvider? languageProvider;
+
+    try {
+      menuProvider = Provider.of<MenuProvider>(context, listen: false);
+      settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+      languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    } catch (e) {
+      print('❌ Error getting providers: $e');
+      return Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(child: Text('Provider error: $e')),
+      );
+    }
 
     final locale = languageProvider.currentLocale.languageCode;
     final currentDayPeriod = menuProvider.getCurrentDayPeriod();
@@ -81,73 +129,94 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
               actions: [
                 // Language Selector
-                PopupMenuButton<String>(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        languageProvider.currentLanguageFlag,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      const Icon(Icons.arrow_drop_down, color: Colors.white),
-                    ],
-                  ),
-                  onSelected: (languageCode) {
-                    languageProvider.setLanguageCode(languageCode);
-                  },
-                  itemBuilder: (context) => languageProvider.supportedLocales
-                      .map((locale) => PopupMenuItem(
-                    value: locale.languageCode,
-                    child: Row(
+                // Language Selector - with null safety
+                if (languageProvider != null)
+                  PopupMenuButton<String>(
+                    icon: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          languageProvider.getLanguageFlag(locale.languageCode),
+                          languageProvider?.currentLanguageFlag ?? '🌐',
                           style: const TextStyle(fontSize: 20),
                         ),
-                        const SizedBox(width: AppTheme.spacingS),
-                        Text(languageProvider.getLanguageName(locale.languageCode)),
+                        const Icon(Icons.arrow_drop_down, color: Colors.white),
                       ],
                     ),
-                  ))
-                      .toList(),
-                ),
+                    onSelected: (languageCode) {
+                      languageProvider?.setLanguageCode(languageCode);
+                    },
+                    itemBuilder: (context) {
+                      final locales = languageProvider?.supportedLocales ?? [const Locale('en')];
+                      return locales.map((locale) => PopupMenuItem(
+                        value: locale.languageCode,
+                        child: Row(
+                          children: [
+                            Text(
+                              languageProvider?.getLanguageFlag(locale.languageCode) ?? '🌐',
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(width: AppTheme.spacingS),
+                            Text(languageProvider?.getLanguageName(locale.languageCode) ?? locale.languageCode),
+                          ],
+                        ),
+                      )).toList();
+                    },
+                  ),
 
                 // Notifications
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                      onPressed: () {
-                        _showNotifications();
-                      },
-                    ),
-                    if (_notificationCount > 0)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentColor,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
-                          ),
-                          child: Text(
-                            _notificationCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                // Notifications
+                if (menuProvider != null)
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                        onPressed: () {
+                          _showNotifications();
+                        },
+                      ),
+                      if (_notificationCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentColor,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            textAlign: TextAlign.center,
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              _notificationCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
+
+// Info
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/info');
+                  },
+                ),
+
+// Admin Access
+                IconButton(
+                  icon: const Icon(Icons.admin_panel_settings, color: Colors.white54),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/admin');
+                  },
                 ),
 
                 // Info

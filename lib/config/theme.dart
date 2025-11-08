@@ -63,70 +63,70 @@ class AppTheme {
       onSurface: textPrimary,
     ),
 
-    textTheme: _buildTextTheme(Brightness.light),
-    // Typography
-    // textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme).copyWith(
-    //   displayLarge: GoogleFonts.poppins(
-    //     fontSize: 32,
-    //     fontWeight: FontWeight.bold,
-    //     color: textPrimary,
-    //   ),
-    //   displayMedium: GoogleFonts.poppins(
-    //     fontSize: 28,
-    //     fontWeight: FontWeight.bold,
-    //     color: textPrimary,
-    //   ),
-    //   displaySmall: GoogleFonts.poppins(
-    //     fontSize: 24,
-    //     fontWeight: FontWeight.bold,
-    //     color: textPrimary,
-    //   ),
-    //   headlineLarge: GoogleFonts.poppins(
-    //     fontSize: 20,
-    //     fontWeight: FontWeight.w600,
-    //     color: textPrimary,
-    //   ),
-    //   headlineMedium: GoogleFonts.poppins(
-    //     fontSize: 18,
-    //     fontWeight: FontWeight.w600,
-    //     color: textPrimary,
-    //   ),
-    //   headlineSmall: GoogleFonts.poppins(
-    //     fontSize: 16,
-    //     fontWeight: FontWeight.w600,
-    //     color: textPrimary,
-    //   ),
-    //   bodyLarge: GoogleFonts.inter(
-    //     fontSize: 16,
-    //     fontWeight: FontWeight.normal,
-    //     color: textPrimary,
-    //   ),
-    //   bodyMedium: GoogleFonts.inter(
-    //     fontSize: 14,
-    //     fontWeight: FontWeight.normal,
-    //     color: textPrimary,
-    //   ),
-    //   bodySmall: GoogleFonts.inter(
-    //     fontSize: 12,
-    //     fontWeight: FontWeight.normal,
-    //     color: textSecondary,
-    //   ),
-    //   labelLarge: GoogleFonts.inter(
-    //     fontSize: 14,
-    //     fontWeight: FontWeight.w500,
-    //     color: textPrimary,
-    //   ),
-    //   labelMedium: GoogleFonts.inter(
-    //     fontSize: 12,
-    //     fontWeight: FontWeight.w500,
-    //     color: textPrimary,
-    //   ),
-    //   labelSmall: GoogleFonts.inter(
-    //     fontSize: 10,
-    //     fontWeight: FontWeight.w500,
-    //     color: textSecondary,
-    //   ),
-    // ),
+    // textTheme: _buildTextTheme(Brightness.light),
+   //Typography
+    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme).copyWith(
+      displayLarge: GoogleFonts.poppins(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
+      ),
+      displayMedium: GoogleFonts.poppins(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
+      ),
+      displaySmall: GoogleFonts.poppins(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
+      ),
+      headlineLarge: GoogleFonts.poppins(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      headlineMedium: GoogleFonts.poppins(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      headlineSmall: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      bodyLarge: GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.normal,
+        color: textPrimary,
+      ),
+      bodyMedium: GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.normal,
+        color: textPrimary,
+      ),
+      bodySmall: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.normal,
+        color: textSecondary,
+      ),
+      labelLarge: GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: textPrimary,
+      ),
+      labelMedium: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: textPrimary,
+      ),
+      labelSmall: GoogleFonts.inter(
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
+    ),
 
     // Components
     appBarTheme: const AppBarTheme(

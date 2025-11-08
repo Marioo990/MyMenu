@@ -8,45 +8,11 @@ import '../../providers/menu_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/language_provider.dart';
-// Fixed imports - pointing to correct subdirectory
 import '../../widgets/menu/category_carousel.dart';
 import '../../widgets/menu/menu_item_card.dart';
 import '../../widgets/menu/search_bar.dart' as custom;
 import '../../widgets/menu/filter_chips.dart';
 
-// TEMPORARY: Simple test version
-class SimpleMenuScreen extends StatelessWidget {
-  const SimpleMenuScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    print('🏠 SimpleMenuScreen building...');
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Menu'),
-        backgroundColor: Colors.blue,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.restaurant_menu, size: 64, color: Colors.blue),
-            const SizedBox(height: 16),
-            const Text('Menu Screen Works!', style: TextStyle(fontSize: 24)),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/info');
-              },
-              child: const Text('Go to Info'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});

@@ -4,19 +4,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'config/theme.dart';
-// import 'config/routes.dart';
 import 'providers/menu_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/language_provider.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
-import 'screens/public/menu_screen.dart';
 import 'config/routes.dart';
+import 'services/database_initializer.dart';
 
-
-import 'screens/public/info_screen.dart';
-import 'screens/admin/admin_login_screen.dart';
+// import 'config/routes.dart';
+// import 'screens/public/menu_screen.dart';
+// import 'screens/public/info_screen.dart';
+// import 'screens/admin/admin_login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -35,7 +35,20 @@ void main() async {
       },
     );
     print('✅ Firebase initialized successfully');
-
+// Initialize database with sample data if needed
+    try {
+      final initializer = DatabaseInitializer();
+      final isInitialized = await initializer.isDatabaseInitialized();
+      if (!isInitialized) {
+        print('🔧 Initializing database with default data...');
+        await initializer.initializeDatabase();
+        print('✅ Database initialized with sample data');
+      } else {
+        print('✅ Database already has data');
+      }
+    } catch (e) {
+      print('⚠️ Database initialization error: $e - continuing anyway');
+    }
     // Initialize services
     final firebaseService = FirebaseService();
     final authService = AuthService();
@@ -110,11 +123,13 @@ void main() async {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const Icon(Icons.error_outline,
+                          size: 64, color: Colors.red),
                       const SizedBox(height: 24),
                       const Text(
                         'Initialization Error',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -153,6 +168,7 @@ void main() async {
 
 class RestaurantMenuApp extends StatelessWidget {
   const RestaurantMenuApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     print('🎨 Building RestaurantMenuApp');
@@ -163,7 +179,8 @@ class RestaurantMenuApp extends StatelessWidget {
         final settingsReady = !settingsProvider.isLoading;
 
         print('📊 Provider status:');
-        print('   - Language ready: $languageReady (locale: ${languageProvider.currentLocale})');
+        print(
+            '   - Language ready: $languageReady (locale: ${languageProvider.currentLocale})');
         print('   - Settings ready: $settingsReady');
 
         if (!languageReady || !settingsReady) {
@@ -178,7 +195,9 @@ class RestaurantMenuApp extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 24),
                     Text(
-                      !languageReady ? 'Loading language...' : 'Loading settings...',
+                      !languageReady
+                          ? 'Loading language...'
+                          : 'Loading settings...',
                       style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
                   ],
@@ -204,7 +223,8 @@ class RestaurantMenuApp extends StatelessWidget {
           print('⚠️ Error getting restaurant name: $e');
         }
 
-        print('📱 Building MaterialApp: Title=$appTitle, Locale=$currentLocale');
+        print(
+            '📱 Building MaterialApp: Title=$appTitle, Locale=$currentLocale');
 
         // CRITICAL: Return MaterialApp WITHOUT rebuilding on stream changes
         return _RestaurantMenuAppCore(
@@ -215,8 +235,6 @@ class RestaurantMenuApp extends StatelessWidget {
       },
     );
   }
-
-  
 }
 
 // Separate widget to prevent rebuilds from Provider streams

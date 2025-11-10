@@ -96,13 +96,13 @@ class _MenuScreenState extends State<MenuScreen> {
               actions: [
                 // Language Selector
                 // Language Selector - with null safety
-                if (languageProvider != null)
+
                   PopupMenuButton<String>(
                     icon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          languageProvider?.currentLanguageFlag ?? '🌐',
+                          languageProvider.currentLanguageFlag?? '🌐',
                           style: const TextStyle(fontSize: 20),
                         ),
                         const Icon(Icons.arrow_drop_down, color: Colors.white),
@@ -131,7 +131,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                 // Notifications
                 // Notifications
-                if (menuProvider != null)
+
                   Stack(
                     alignment: Alignment.center,
                     children: [

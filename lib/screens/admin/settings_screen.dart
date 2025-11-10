@@ -4,6 +4,9 @@ import '../../config/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/language_provider.dart';
 
+import '../../services/firebase_service.dart';  // DODAJ TEN IMPORT
+import 'dart:convert';  // DODAJ TEN IMPORT
+import 'dart:html' as html;  // DODAJ TEN IMPORT
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -544,17 +547,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _exportData() {
-    // Implement export functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export functionality to be implemented')),
-    );
+  void _exportData() async {
+    try {
+      // Pobierz FirebaseService przez Provider
+      final firebaseService = context.read<FirebaseService>();
+      final data = await firebaseService.exportData();
+      final jsonStr = jsonEncode(data);
+
+      // Dla Web - pobierz plik
+      final bytes = utf8.encode(jsonStr);
+      final blob = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement()
+        ..href = url
+        ..download = 'menu_export_${DateTime.now().millisecondsSinceEpoch}.json';
+      anchor.click();
+      html.Url.revokeObjectUrl(url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data exported successfully'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
   }
 
-  void _importData() {
-    // Implement import functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Import functionality to be implemented')),
-    );
+  void _importData() async {
+    try {
+      // Utwórz input element
+      final uploadInput = html.FileUploadInputElement()
+        ..accept = 'application/json,.json';
+      uploadInput.click();
+
+      await uploadInput.onChange.first;
+      final file = uploadInput.files!.first;
+      final reader = html.FileReader();
+
+      reader.readAsText(file);
+      await reader.onLoadEnd.first;
+
+      final jsonStr = reader.result as String;
+      final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+      final firebaseService = context.read<FirebaseService>();
+      await firebaseService.importData(data);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data imported successfully'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import failed: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
   }
 }

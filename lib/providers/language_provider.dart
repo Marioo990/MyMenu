@@ -217,7 +217,6 @@ class LanguageProvider with ChangeNotifier {
       'view_all': 'View All',
       'item_added': 'Item added',
       'category_updated': 'Category updated',
-      'item_deleted': 'Item deleted',
       'notification_created': 'Notification created',
       'settings_changed': 'Settings changed',
       'save_settings': 'Save Settings',

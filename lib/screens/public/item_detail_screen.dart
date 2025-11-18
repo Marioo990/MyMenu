@@ -23,118 +23,124 @@ class ItemDetailScreen extends StatefulWidget {
 class _ItemDetailScreenState extends State<ItemDetailScreen> {
   @override
   Widget build(BuildContext context) {
-    final menuProvider = Provider.of<MenuProvider>(context);
-    final settingsProvider = Provider.of<SettingsProvider>(context);
-    final favoritesProvider = Provider.of<FavoritesProvider>(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    return Consumer4<MenuProvider, SettingsProvider, FavoritesProvider, LanguageProvider>(
+      builder: (context, menuProvider, settingsProvider, favoritesProvider, languageProvider, child) {
+        final item = menuProvider.getMenuItem(widget.itemId);
+        final locale = languageProvider.currentLocale.languageCode;
 
-    final item = menuProvider.getMenuItem(widget.itemId);
-    final locale = languageProvider.currentLocale.languageCode;
-
-    if (item == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(languageProvider.translate('error')),
-        ),
-        body: Center(
-          child: Text(languageProvider.translate('no_items_found')),
-        ),
-      );
-    }
-
-    final isFavorite = favoritesProvider.isFavorite(item.id);
-    final showImages = settingsProvider.showImages;
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with Image
-          SliverAppBar(
-            expandedHeight: showImages && item.imageUrl != null ? 300 : 100,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingS,
-                  vertical: AppTheme.spacingXS,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                ),
-                child: Text(
-                  item.getName(locale),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              background: showImages && item.imageUrl != null
-                  ? _buildHeroImage(item)
-                  : Container(color: AppTheme.primaryColor),
+        if (item == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(languageProvider.translate('error')),
             ),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? AppTheme.accentColor : null,
-                ),
-                onPressed: () {
-                  favoritesProvider.toggleFavorite(item.id);
-                },
-              ),
-            ],
-          ),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: AppTheme.responsivePadding(context),
+            body: Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Price and Category
-                  _buildPriceAndCategory(item, locale, context),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Dietary Icons and Spiciness
-                  _buildDietaryInfo(item),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Description
-                  _buildSection(
-                    title: languageProvider.translate('description'),
-                    child: Text(
-                      item.getDescription(locale),
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Nutrition Info
-                  if (item.calories != null || item.macros != null)
-                    _buildNutritionInfo(item, languageProvider),
-
-                  // Allergens
-                  if (item.allergens.isNotEmpty)
-                    _buildAllergens(item, languageProvider),
-
-                  // Ingredients (if available in description)
-                  if (item.description.values.any((d) => d.contains('Składniki:') || d.contains('Ingredients:')))
-                    _buildIngredients(item, locale, languageProvider),
-
-                  const SizedBox(height: AppTheme.spacingXXL),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(languageProvider.translate('no_items_found')),
                 ],
               ),
             ),
+          );
+        }
+
+        final isFavorite = favoritesProvider.isFavorite(item.id);
+        final showImages = settingsProvider.showImages;
+
+        return Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              // App Bar with Image
+              SliverAppBar(
+                expandedHeight: showImages && item.imageUrl != null ? 300 : 100,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingS,
+                      vertical: AppTheme.spacingXS,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                    ),
+                    child: Text(
+                      item.getName(locale),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  background: showImages && item.imageUrl != null
+                      ? _buildHeroImage(item)
+                      : Container(color: AppTheme.primaryColor),
+                ),
+                actions: [
+                  IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? AppTheme.accentColor : null,
+                    ),
+                    onPressed: () {
+                      favoritesProvider.toggleFavorite(item.id);
+                    },
+                  ),
+                ],
+              ),
+
+              // Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: AppTheme.responsivePadding(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Price and Category
+                      _buildPriceAndCategory(item, locale, context, menuProvider),
+
+                      const SizedBox(height: AppTheme.spacingL),
+
+                      // Dietary Icons and Spiciness
+                      _buildDietaryInfo(item),
+
+                      const SizedBox(height: AppTheme.spacingL),
+
+                      // Description
+                      _buildSection(
+                        title: languageProvider.translate('description'),
+                        child: Text(
+                          item.getDescription(locale),
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingL),
+
+                      // Nutrition Info
+                      if (item.calories != null || item.macros != null)
+                        _buildNutritionInfo(item, languageProvider),
+
+                      // Allergens
+                      if (item.allergens.isNotEmpty)
+                        _buildAllergens(item, languageProvider),
+
+                      // Ingredients (if available in description)
+                      if (item.description.values.any((d) => d.contains('Składniki:') || d.contains('Ingredients:')))
+                        _buildIngredients(item, locale, languageProvider),
+
+                      const SizedBox(height: AppTheme.spacingXXL),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -177,8 +183,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  Widget _buildPriceAndCategory(MenuItem item, String locale, BuildContext context) {
-    final category = Provider.of<MenuProvider>(context).getCategory(item.categoryId);
+  Widget _buildPriceAndCategory(MenuItem item, String locale, BuildContext context, MenuProvider menuProvider) {
+    final category = menuProvider.getCategory(item.categoryId);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -211,22 +217,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           ),
 
         // Price
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingL,
-            vertical: AppTheme.spacingM,
-          ),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusRound),
-          ),
-          child: Text(
-            _formatPrice(item.price, context),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        Consumer<SettingsProvider>(
+          builder: (context, settingsProvider, child) {
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingL,
+                vertical: AppTheme.spacingM,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusRound),
+              ),
+              child: Text(
+                _formatPrice(item.price, settingsProvider),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -406,8 +416,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  String _formatPrice(double price, BuildContext context) {
-    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+  String _formatPrice(double price, SettingsProvider settingsProvider) {
     final currency = settingsProvider.currency;
     final priceStr = price.toStringAsFixed(2);
 

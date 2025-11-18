@@ -37,298 +37,285 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> _loadData() async {
-    final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-    await menuProvider.refreshAll();
+    try {
+      final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+      await menuProvider.refreshAll();
 
-    // Get notification count
-    final notifications = await menuProvider.getActiveNotifications();
-    setState(() {
-      _notificationCount = notifications.length;
-    });
+      // Get notification count
+      final notifications = await menuProvider.getActiveNotifications();
+      if (mounted) {
+        setState(() {
+          _notificationCount = notifications.length;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading data: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Safely get providers with null checks
-    MenuProvider? menuProvider;
-    SettingsProvider? settingsProvider;
-    FavoritesProvider? favoritesProvider;
-    LanguageProvider? languageProvider;
+    print('🏗️ [MenuScreen] Building...');
 
-    try {
-      menuProvider = Provider.of<MenuProvider>(context, listen: false);
-      settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-      favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
-      languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-    } catch (e) {
-      print('❌ Error getting providers: $e');
-      return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: Center(child: Text('Provider error: $e')),
-      );
-    }
+    // Get providers - use Consumer to ensure reactivity and proper null handling
+    return Consumer4<MenuProvider, SettingsProvider, FavoritesProvider, LanguageProvider>(
+      builder: (context, menuProvider, settingsProvider, favoritesProvider, languageProvider, child) {
+        final locale = languageProvider.currentLocale.languageCode;
+        final currentDayPeriod = menuProvider.getCurrentDayPeriod();
 
-    final locale = languageProvider.currentLocale.languageCode;
-    final currentDayPeriod = menuProvider.getCurrentDayPeriod();
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          body: RefreshIndicator(
+            onRefresh: _loadData,
+            child: CustomScrollView(
+              slivers: [
+                // App Bar
+                _buildAppBar(context, settingsProvider, languageProvider, locale),
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: CustomScrollView(
-          slivers: [
-            // App Bar
-            SliverAppBar(
-              floating: true,
-              pinned: true,
-              expandedHeight: 120,
-              backgroundColor: AppTheme.primaryColor,
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  settingsProvider.getRestaurantNameForLocale(locale),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                // Day Period Indicator
+                if (settingsProvider.dayPeriodsEnabled && currentDayPeriod != null)
+                  _buildDayPeriodIndicator(context, currentDayPeriod, locale),
+
+                // Categories
+                SliverToBoxAdapter(
+                  child: CategoryCarousel(
+                    categories: _buildCategoryList(menuProvider, favoritesProvider, languageProvider),
+                    selectedCategoryId: _selectedCategoryId,
+                    onCategorySelected: (categoryId) {
+                      setState(() {
+                        _selectedCategoryId = categoryId;
+                      });
+                    },
+                    locale: locale,
                   ),
                 ),
-                centerTitle: true,
-              ),
-              actions: [
-                // Language Selector
-                // Language Selector - with null safety
 
-                  PopupMenuButton<String>(
-                    icon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          languageProvider.currentLanguageFlag?? '🌐',
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                        const Icon(Icons.arrow_drop_down, color: Colors.white),
-                      ],
+                // Search Bar & Filter Toggle
+                _buildSearchAndFilter(context, languageProvider),
+
+                // Filters (if shown)
+                if (_showFilters)
+                  SliverToBoxAdapter(
+                    child: FilterChips(
+                      filter: _filter,
+                      onFilterChanged: (filter) {
+                        setState(() {
+                          _filter = filter;
+                        });
+                      },
+                      sortOption: _sortOption,
+                      onSortChanged: (sort) {
+                        setState(() {
+                          _sortOption = sort;
+                        });
+                      },
                     ),
-                    onSelected: (languageCode) {
-                      languageProvider?.setLanguageCode(languageCode);
-                    },
-                    itemBuilder: (context) {
-                      final locales = languageProvider?.supportedLocales ?? [const Locale('en')];
-                      return locales.map((locale) => PopupMenuItem(
-                        value: locale.languageCode,
-                        child: Row(
-                          children: [
-                            Text(
-                              languageProvider?.getLanguageFlag(locale.languageCode) ?? '🌐',
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                            const SizedBox(width: AppTheme.spacingS),
-                            Text(languageProvider?.getLanguageName(locale.languageCode) ?? locale.languageCode),
-                          ],
-                        ),
-                      )).toList();
-                    },
                   ),
 
-                // Notifications
-                // Notifications
-
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                        onPressed: () {
-                          _showNotifications();
-                        },
-                      ),
-                      if (_notificationCount > 0)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Text(
-                              _notificationCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                    ],
+                // Menu Items
+                if (menuProvider.isLoadingItems)
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.all(AppTheme.spacingM),
+                    sliver: _buildMenuItemsList(
+                      menuProvider,
+                      favoritesProvider,
+                      languageProvider,
+                      locale,
+                    ),
                   ),
-
-// Info
-                IconButton(
-                  icon: const Icon(Icons.info_outline, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/info');
-                  },
-                ),
-
-// Admin Access
-                IconButton(
-                  icon: const Icon(Icons.admin_panel_settings, color: Colors.white54),
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/admin');
-                  },
-                ),
-
-                // Info
-                IconButton(
-                  icon: const Icon(Icons.info_outline, color: Colors.white),
-                  onPressed: () {
-                    AppRoutes.navigateTo(context, AppRoutes.info);
-                  },
-                ),
-
-                // Admin Access
-                IconButton(
-                  icon: const Icon(Icons.admin_panel_settings, color: Colors.white54),
-                  onPressed: () {
-                    AppRoutes.navigateTo(context, AppRoutes.adminLogin);
-                  },
-                ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
 
-            // Day Period Indicator
-            if (settingsProvider.dayPeriodsEnabled && currentDayPeriod != null)
-              SliverToBoxAdapter(
+  Widget _buildAppBar(BuildContext context, SettingsProvider settingsProvider, LanguageProvider languageProvider, String locale) {
+    return SliverAppBar(
+      floating: true,
+      pinned: true,
+      expandedHeight: 120,
+      backgroundColor: AppTheme.primaryColor,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          settingsProvider.getRestaurantNameForLocale(locale),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      actions: [
+        // Language Selector
+        PopupMenuButton<String>(
+          icon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                languageProvider.currentLanguageFlag,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const Icon(Icons.arrow_drop_down, color: Colors.white),
+            ],
+          ),
+          onSelected: (languageCode) {
+            languageProvider.setLanguageCode(languageCode);
+          },
+          itemBuilder: (context) {
+            return languageProvider.supportedLocales.map((locale) {
+              return PopupMenuItem(
+                value: locale.languageCode,
+                child: Row(
+                  children: [
+                    Text(
+                      languageProvider.getLanguageFlag(locale.languageCode),
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(width: AppTheme.spacingS),
+                    Text(languageProvider.getLanguageName(locale.languageCode)),
+                  ],
+                ),
+              );
+            }).toList();
+          },
+        ),
+
+        // Notifications
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              onPressed: () {
+                _showNotifications();
+              },
+            ),
+            if (_notificationCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
                 child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppTheme.spacingM),
-                  color: AppTheme.secondaryColor.withOpacity(0.1),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        currentDayPeriod.getDisplayIcon(),
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                      const SizedBox(width: AppTheme.spacingS),
-                      Text(
-                        currentDayPeriod.getName(locale),
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppTheme.secondaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.spacingM),
-                      Text(
-                        currentDayPeriod.getTimeRangeString(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    _notificationCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
+          ],
+        ),
 
-            // Categories
-            SliverToBoxAdapter(
-              child: CategoryCarousel(
-                categories: _buildCategoryList(menuProvider, languageProvider),
-                selectedCategoryId: _selectedCategoryId,
-                onCategorySelected: (categoryId) {
-                  setState(() {
-                    _selectedCategoryId = categoryId;
-                  });
-                },
-                locale: locale,
+        // Info
+        IconButton(
+          icon: const Icon(Icons.info_outline, color: Colors.white),
+          onPressed: () {
+            Navigator.pushNamed(context, '/info');
+          },
+        ),
+
+        // Admin Access
+        IconButton(
+          icon: const Icon(Icons.admin_panel_settings, color: Colors.white54),
+          onPressed: () {
+            Navigator.pushNamed(context, '/admin');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDayPeriodIndicator(BuildContext context, dynamic currentDayPeriod, String locale) {
+    return SliverToBoxAdapter(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppTheme.spacingM),
+        color: AppTheme.secondaryColor.withOpacity(0.1),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              currentDayPeriod.getDisplayIcon(),
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(width: AppTheme.spacingS),
+            Text(
+              currentDayPeriod.getName(locale),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppTheme.secondaryColor,
+                fontWeight: FontWeight.bold,
               ),
             ),
-
-            // Search Bar & Filter Toggle
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacingM),
-                child: Column(
-                  children: [
-                    // Search Bar
-                    custom.SearchBar(
-                      onSearchChanged: (query) {
-                        setState(() {
-                          _filter = _filter.copyWith(searchQuery: query);
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: AppTheme.spacingM),
-
-                    // Filter Toggle Button
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _showFilters = !_showFilters;
-                        });
-                      },
-                      icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
-                      label: Text(languageProvider.translate('filter')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _showFilters ? AppTheme.secondaryColor : null,
-                      ),
-                    ),
-                  ],
-                ),
+            const SizedBox(width: AppTheme.spacingM),
+            Text(
+              currentDayPeriod.getTimeRangeString(),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
               ),
             ),
-
-            // Filters (if shown)
-            if (_showFilters)
-              SliverToBoxAdapter(
-                child: FilterChips(
-                  filter: _filter,
-                  onFilterChanged: (filter) {
-                    setState(() {
-                      _filter = filter;
-                    });
-                  },
-                  sortOption: _sortOption,
-                  onSortChanged: (sort) {
-                    setState(() {
-                      _sortOption = sort;
-                    });
-                  },
-                ),
-              ),
-
-            // Menu Items
-            if (menuProvider.isLoadingItems)
-              const SliverFillRemaining(
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(AppTheme.spacingM),
-                sliver: _buildMenuItemsList(
-                  menuProvider,
-                  favoritesProvider,
-                  languageProvider,
-                  locale,
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  List<Category> _buildCategoryList(MenuProvider menuProvider, LanguageProvider languageProvider) {
+  Widget _buildSearchAndFilter(BuildContext context, LanguageProvider languageProvider) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingM),
+        child: Column(
+          children: [
+            // Search Bar
+            custom.SearchBar(
+              onSearchChanged: (query) {
+                setState(() {
+                  _filter = _filter.copyWith(searchQuery: query);
+                });
+              },
+            ),
+
+            const SizedBox(height: AppTheme.spacingM),
+
+            // Filter Toggle Button
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showFilters = !_showFilters;
+                });
+              },
+              icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
+              label: Text(languageProvider.translate('filter')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _showFilters ? AppTheme.secondaryColor : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Category> _buildCategoryList(MenuProvider menuProvider, FavoritesProvider favoritesProvider, LanguageProvider languageProvider) {
     final categories = <Category>[];
 
     // Add special categories
@@ -337,7 +324,7 @@ class _MenuScreenState extends State<MenuScreen> {
       'pl': 'Wszystkie',
     }));
 
-    if (Provider.of<FavoritesProvider>(context).hasFavorites) {
+    if (favoritesProvider.hasFavorites) {
       categories.add(SpecialCategories.getFavoritesCategory({
         'en': 'Favorites',
         'pl': 'Ulubione',
@@ -453,41 +440,43 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _buildNotificationsList(ScrollController scrollController) {
-    final menuProvider = Provider.of<MenuProvider>(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    final locale = languageProvider.currentLocale.languageCode;
+    return Consumer2<MenuProvider, LanguageProvider>(
+      builder: (context, menuProvider, languageProvider, child) {
+        final locale = languageProvider.currentLocale.languageCode;
 
-    return FutureBuilder<List<dynamic>>(
-      future: menuProvider.getActiveNotifications(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Text(languageProvider.translate('no_notifications')),
-          );
-        }
+        return FutureBuilder<List<dynamic>>(
+          future: menuProvider.getActiveNotifications(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(
+                child: Text(languageProvider.translate('no_notifications')),
+              );
+            }
 
-        final notifications = snapshot.data!;
+            final notifications = snapshot.data!;
 
-        return ListView.builder(
-          controller: scrollController,
-          padding: const EdgeInsets.all(AppTheme.spacingM),
-          itemCount: notifications.length,
-          itemBuilder: (context, index) {
-            final notification = notifications[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: AppTheme.secondaryColor,
-                  child: Icon(Icons.campaign, color: Colors.white),
-                ),
-                title: Text(notification.getTitle(locale)),
-                subtitle: Text(notification.getMessage(locale)),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Handle notification tap
-                },
-              ),
+            return ListView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.all(AppTheme.spacingM),
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notification = notifications[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: AppTheme.secondaryColor,
+                      child: Icon(Icons.campaign, color: Colors.white),
+                    ),
+                    title: Text(notification.getTitle(locale)),
+                    subtitle: Text(notification.getMessage(locale)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      // Handle notification tap
+                    },
+                  ),
+                );
+              },
             );
           },
         );

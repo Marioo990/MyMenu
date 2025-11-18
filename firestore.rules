@@ -1,19 +1,46 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Funkcja sprawdzająca czy user jest adminem
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email_verified == true &&
+        (
+          request.auth.token.email in ['admin@restaurant.com', 'pizza99069@gmail.com'] ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
+        );
+    }
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 11, 24);
+    // Użytkownicy mogą czytać własne dane
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.auth.token.email_verified == true;
+    }
+
+    // Tylko admini mogą zarządzać listą adminów
+    match /admins/{document} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Menu - wszyscy czytają, tylko admini piszą
+    match /menuItems/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Settings - tylko admini
+    match /settings/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

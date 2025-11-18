@@ -11,9 +11,13 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # Firebase - Updated to compatible versions
+  google_sign_in: ^6.2.1
+  google_sign_in_web: ^0.12.3+2
+
+  # Firebase - Kompatybilne wersje
   firebase_core: ^4.2.0
   firebase_auth: ^6.1.1
+  firebase_auth_web: ^6.1.0
   cloud_firestore: ^6.0.3
   firebase_storage: ^13.0.3
   firebase_messaging: ^16.0.3

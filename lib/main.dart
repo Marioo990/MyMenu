@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:restaurant_menu/services/google_auth_service.dart';
 
 import 'firebase_options.dart';
 import 'config/theme.dart';
@@ -26,7 +27,7 @@ import 'screens/public/item_detail_screen.dart';
 import 'screens/public/info_screen.dart';
 
 // Screens - Admin
-import 'screens/admin/admin_login_screen.dart';
+import 'screens/admin/google_login_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_items_screen.dart';
 import 'screens/admin/manage_categories_screen.dart';
@@ -248,7 +249,7 @@ class RestaurantMenuApp extends StatelessWidget {
       case '/admin':
       case '/admin/login':
         return MaterialPageRoute(
-          builder: (_) => const AdminLoginScreen(),
+          builder: (_) => const GoogleLoginScreen(),
           settings: settings,
         );
 
@@ -325,6 +326,8 @@ class AdminGuard extends StatefulWidget {
 }
 
 class _AdminGuardState extends State<AdminGuard> {
+  final GoogleAuthService _authService = GoogleAuthService();
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -341,9 +344,32 @@ class _AdminGuardState extends State<AdminGuard> {
 
         // Check if user is logged in
         if (snapshot.hasData && snapshot.data != null) {
+          final user = snapshot.data!;
+
+          // Sprawdź email verification
+          if (!user.emailVerified) {
+            Future.microtask(() {
+              if (mounted) {
+                _authService.signOut();
+                Navigator.pushReplacementNamed(context, '/admin/login');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Email not verified. Please verify your Google account.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            });
+            return const Scaffold(
+              body: Center(
+                child: Text('Email verification required'),
+              ),
+            );
+          }
+
           // Check admin role
           return FutureBuilder<bool>(
-            future: _checkAdminRole(snapshot.data!),
+            future: _authService.checkAdminAccess(user),
             builder: (context, adminSnapshot) {
               if (adminSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
@@ -354,14 +380,21 @@ class _AdminGuardState extends State<AdminGuard> {
               }
 
               if (adminSnapshot.hasData && adminSnapshot.data == true) {
-                // User is admin - show protected screen
+                // User is admin
                 return widget.child;
               }
 
-              // Not an admin - redirect to login
-              Future.microtask(() {
+              // Not an admin - sign out and redirect
+              Future.microtask(() async {
                 if (mounted) {
+                  await _authService.signOut();
                   Navigator.pushReplacementNamed(context, '/admin/login');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Access denied. Admin privileges required.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               });
 
@@ -383,51 +416,11 @@ class _AdminGuardState extends State<AdminGuard> {
 
         return const Scaffold(
           body: Center(
-            child: Text('Please login'),
+            child: Text('Please sign in'),
           ),
         );
       },
     );
-  }
-
-  Future<bool> _checkAdminRole(User user) async {
-    try {
-      // Method 1: Check custom claims (recommended)
-      final tokenResult = await user.getIdTokenResult();
-      if (tokenResult.claims?['admin'] == true) {
-        print('✅ User is admin (custom claims)');
-        return true;
-      }
-
-      // Method 2: Check Firestore admin collection
-      final adminDoc = await FirebaseFirestore.instance
-          .collection('admins')
-          .doc(user.uid)
-          .get();
-
-      if (adminDoc.exists && adminDoc.data()?['isAdmin'] == true) {
-        print('✅ User is admin (Firestore)');
-        return true;
-      }
-
-      // Method 3: Check by email (for development)
-      final adminEmails = [
-        'admin@restaurant.com',
-        'admin@test.com',
-        // Dodaj tutaj swój email admina
-      ];
-
-      if (user.email != null && adminEmails.contains(user.email)) {
-        print('✅ User is admin (email whitelist)');
-        return true;
-      }
-
-      print('❌ User is not admin');
-      return false;
-    } catch (e) {
-      print('❌ Error checking admin role: $e');
-      return false;
-    }
   }
 }
 

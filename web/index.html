@@ -8,6 +8,10 @@
   <meta name="description" content="Restaurant Menu - Digital menu for your restaurant">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
+  <!-- Google Sign-In SDK -->
+  <meta name="google-signin-client_id" content="927400788077-your-client-id.apps.googleusercontent.com">
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -200,6 +204,37 @@
   window.addEventListener('unhandledrejection', function(event) {
     console.error('❌ [index.html] Unhandled promise rejection:', event.reason);
   });
+</script>
+
+<script>
+  // Konfiguracja Firebase Auth UI
+  const uiConfig = {
+    signInSuccessUrl: '/admin/dashboard',
+    signInOptions: [
+      {
+        provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+        scopes: [
+          'email',
+          'profile',
+          'openid'
+        ],
+        customParameters: {
+          prompt: 'select_account'
+        }
+      }
+    ],
+    signInFlow: 'popup',
+    credentialHelper: 'none',
+    callbacks: {
+      signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+        console.log('Sign-in successful:', authResult.user.email);
+        return true;
+      },
+      signInFailure: function(error) {
+        console.error('Sign-in failed:', error);
+      }
+    }
+  };
 </script>
 
 <!-- Firebase SDK - Compatible versions -->

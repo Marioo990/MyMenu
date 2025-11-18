@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:restaurant_menu/screens/admin/admin_login_screen.dart';
 import 'package:restaurant_menu/services/google_auth_service.dart';
 
 import 'firebase_options.dart';
@@ -219,7 +220,7 @@ class RestaurantMenuApp extends StatelessWidget {
     );
   }
 
-  Route<dynamic>? _generateRoute(RouteSettings settings, BuildContext context) {
+  Route<dynamic> _generateRoute(RouteSettings settings, BuildContext context) {
     print('🧭 Navigating to: ${settings.name}');
 
     switch (settings.name) {
@@ -249,7 +250,7 @@ class RestaurantMenuApp extends StatelessWidget {
       case '/admin':
       case '/admin/login':
         return MaterialPageRoute(
-          builder: (_) => const GoogleLoginScreen(),
+          builder: (_) => const AdminLoginScreen(),
           settings: settings,
         );
 

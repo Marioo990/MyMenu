@@ -52,7 +52,7 @@ class LanguageProvider with ChangeNotifier {
     } catch (e) {
       print('❌ [LanguageProvider] Error loading saved locale: $e');
       // Keep default value - already set in initialization
-      _currentLocale = const Locale('en', 'US');
+      _currentLocale = const Locale('en');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -69,14 +69,14 @@ class LanguageProvider with ChangeNotifier {
       // Check if system locale is supported
       final supportedLocale = _supportedLocales.firstWhere(
             (locale) => locale.languageCode == systemLocale.languageCode,
-        orElse: () => const Locale('en', 'US'),
+        orElse: () => const Locale('en'),
       );
 
       print('🌍 [LanguageProvider] Using locale: $supportedLocale');
       return supportedLocale;
     } catch (e) {
       print('⚠️ [LanguageProvider] Error getting system locale: $e');
-      return const Locale('en', 'US');
+      return const Locale('en');
     }
   }
 
@@ -95,7 +95,7 @@ class LanguageProvider with ChangeNotifier {
   Future<void> setLocale(Locale locale) async {
     if (!_supportedLocales.contains(locale)) {
       print('⚠️ [LanguageProvider] Unsupported locale: $locale, using default');
-      locale = const Locale('en', 'US');
+      locale = const Locale('en');
     }
 
     print('🌍 [LanguageProvider] Setting locale to: $locale');
@@ -109,7 +109,7 @@ class LanguageProvider with ChangeNotifier {
     print('🌍 [LanguageProvider] Setting language code: $languageCode');
     final locale = _supportedLocales.firstWhere(
           (locale) => locale.languageCode == languageCode,
-      orElse: () => const Locale('en', 'US'),
+      orElse: () => const Locale('en'),
     );
 
     await setLocale(locale);
@@ -444,6 +444,6 @@ class LanguageProvider with ChangeNotifier {
 
   // Reset to default locale
   Future<void> resetToDefault() async {
-    await setLocale(const Locale('en', 'US'));
+    await setLocale(const Locale('en'));
   }
 }

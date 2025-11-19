@@ -4,9 +4,10 @@ import '../../config/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/language_provider.dart';
 
-import '../../services/firebase_service.dart';  // DODAJ TEN IMPORT
-import 'dart:convert';  // DODAJ TEN IMPORT
-import 'dart:html' as html;  // DODAJ TEN IMPORT
+import '../../services/firebase_service.dart';
+import 'dart:convert';
+import 'dart:html' as html;
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -65,12 +66,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(languageProvider.translate('settings')),
+          title: const Text('Ustawienia'), // PL
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'General', icon: Icon(Icons.settings)),
-              Tab(text: 'Contact', icon: Icon(Icons.contact_phone)),
-              Tab(text: 'Display', icon: Icon(Icons.visibility)),
+              Tab(text: 'Ogólne', icon: Icon(Icons.settings)), // PL
+              Tab(text: 'Kontakt', icon: Icon(Icons.contact_phone)), // PL
+              Tab(text: 'Wygląd', icon: Icon(Icons.visibility)), // PL
             ],
           ),
         ),
@@ -92,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _saveSettings,
           icon: const Icon(Icons.save),
-          label: Text(languageProvider.translate('save_settings')),
+          label: const Text('Zapisz ustawienia'), // PL
           backgroundColor: AppTheme.successColor,
         ),
       ),
@@ -117,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.restaurant, color: AppTheme.primaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Restaurant Name',
+                        'Nazwa Restauracji', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -126,13 +127,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextFormField(
                     controller: _restaurantNameEnController,
                     decoration: const InputDecoration(
-                      labelText: 'Name (English)',
-                      hintText: 'Your Restaurant Name',
+                      labelText: 'Nazwa (Angielski)', // PL
+                      hintText: 'Nazwa Twojej Restauracji',
                       prefixIcon: Icon(Icons.text_fields),
                     ),
                     validator: (value) {
                       if (value?.isEmpty ?? true) {
-                        return 'Restaurant name is required';
+                        return 'Nazwa restauracji jest wymagana'; // PL
                       }
                       return null;
                     },
@@ -141,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextFormField(
                     controller: _restaurantNamePlController,
                     decoration: const InputDecoration(
-                      labelText: 'Name (Polish)',
+                      labelText: 'Nazwa (Polski)', // PL
                       hintText: 'Nazwa Restauracji',
                       prefixIcon: Icon(Icons.text_fields),
                     ),
@@ -165,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.language, color: AppTheme.secondaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Localization',
+                        'Lokalizacja', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -176,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   DropdownButtonFormField<String>(
                     value: _currency,
                     decoration: const InputDecoration(
-                      labelText: 'Currency',
+                      labelText: 'Waluta', // PL
                       prefixIcon: Icon(Icons.attach_money),
                     ),
                     items: ['USD', 'EUR', 'GBP', 'PLN'].map((currency) {
@@ -198,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   DropdownButtonFormField<String>(
                     value: settingsProvider.defaultLanguage,
                     decoration: const InputDecoration(
-                      labelText: 'Default Language',
+                      labelText: 'Domyślny język', // PL
                       prefixIcon: Icon(Icons.translate),
                     ),
                     items: languageProvider.supportedLocales.map((locale) {
@@ -236,7 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.featured_play_list, color: AppTheme.warningColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Features',
+                        'Funkcje', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -244,8 +245,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: AppTheme.spacingL),
 
                   SwitchListTile(
-                    title: const Text('Day Periods'),
-                    subtitle: const Text('Enable breakfast, lunch, dinner periods'),
+                    title: const Text('Pory dnia'), // PL
+                    subtitle: const Text('Włącz pory śniadaniowe, obiadowe, kolacyjne'), // PL
                     secondary: const Icon(Icons.schedule),
                     value: _dayPeriodsEnabled,
                     onChanged: (value) {
@@ -281,7 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.contact_phone, color: AppTheme.primaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Contact Information',
+                        'Dane Kontaktowe', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -291,8 +292,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextFormField(
                     controller: _addressController,
                     decoration: const InputDecoration(
-                      labelText: 'Address',
-                      hintText: '123 Main Street, City, Country',
+                      labelText: 'Adres', // PL
+                      hintText: 'Ul. Przykładowa 1, Miasto',
                       prefixIcon: Icon(Icons.location_on),
                     ),
                     maxLines: 2,
@@ -303,8 +304,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextFormField(
                     controller: _phoneController,
                     decoration: const InputDecoration(
-                      labelText: 'Phone',
-                      hintText: '+1 234 567 8900',
+                      labelText: 'Telefon', // PL
+                      hintText: '+48 123 456 789',
                       prefixIcon: Icon(Icons.phone),
                     ),
                     keyboardType: TextInputType.phone,
@@ -315,14 +316,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'contact@restaurant.com',
+                      labelText: 'Email', // PL
+                      hintText: 'kontakt@restauracja.com',
                       prefixIcon: Icon(Icons.email),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
                       if (value != null && value.isNotEmpty && !value.contains('@')) {
-                        return 'Invalid email address';
+                        return 'Nieprawidłowy adres email'; // PL
                       }
                       return null;
                     },
@@ -346,7 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.schedule, color: AppTheme.secondaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Opening Hours',
+                        'Godziny otwarcia', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -381,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.image, color: AppTheme.primaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Image Settings',
+                        'Ustawienia Obrazów', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -389,8 +390,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: AppTheme.spacingL),
 
                   SwitchListTile(
-                    title: const Text('Show Images'),
-                    subtitle: const Text('Display item images in detail view'),
+                    title: const Text('Pokaż Obrazy'), // PL
+                    subtitle: const Text('Wyświetlaj zdjęcia dań w widoku szczegółów'), // PL
                     secondary: const Icon(Icons.photo),
                     value: _showImages,
                     onChanged: (value) {
@@ -401,8 +402,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   SwitchListTile(
-                    title: const Text('Show Thumbnails'),
-                    subtitle: const Text('Display thumbnails in menu list'),
+                    title: const Text('Pokaż Miniatury'), // PL
+                    subtitle: const Text('Wyświetlaj miniatury na liście menu'), // PL
                     secondary: const Icon(Icons.photo_size_select_actual),
                     value: _showThumbnails,
                     onChanged: (value) {
@@ -430,7 +431,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.import_export, color: AppTheme.warningColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
-                        'Data Management',
+                        'Zarządzanie Danymi', // PL
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ],
@@ -443,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: ElevatedButton.icon(
                           onPressed: _exportData,
                           icon: const Icon(Icons.download),
-                          label: const Text('Export Data'),
+                          label: const Text('Eksportuj Dane'), // PL
                         ),
                       ),
                       const SizedBox(width: AppTheme.spacingM),
@@ -451,7 +452,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _importData,
                           icon: const Icon(Icons.upload),
-                          label: const Text('Import Data'),
+                          label: const Text('Importuj Dane'), // PL
                         ),
                       ),
                     ],
@@ -467,13 +468,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildOpeningHoursEditor(SettingsProvider settingsProvider) {
     final days = [
-      {'key': 'mon', 'label': 'Monday'},
-      {'key': 'tue', 'label': 'Tuesday'},
-      {'key': 'wed', 'label': 'Wednesday'},
-      {'key': 'thu', 'label': 'Thursday'},
-      {'key': 'fri', 'label': 'Friday'},
-      {'key': 'sat', 'label': 'Saturday'},
-      {'key': 'sun', 'label': 'Sunday'},
+      {'key': 'mon', 'label': 'Poniedziałek'}, // PL
+      {'key': 'tue', 'label': 'Wtorek'}, // PL
+      {'key': 'wed', 'label': 'Środa'}, // PL
+      {'key': 'thu', 'label': 'Czwartek'}, // PL
+      {'key': 'fri', 'label': 'Piątek'}, // PL
+      {'key': 'sat', 'label': 'Sobota'}, // PL
+      {'key': 'sun', 'label': 'Niedziela'}, // PL
     ];
 
     final controllers = <String, TextEditingController>{};
@@ -491,7 +492,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             controller: controllers[day['key']!],
             decoration: InputDecoration(
               labelText: day['label'],
-              hintText: '9:00 - 22:00 or Closed',
+              hintText: '9:00 - 22:00 lub Zamknięte', // PL
               prefixIcon: const Icon(Icons.access_time),
             ),
           ),
@@ -530,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Settings saved successfully'),
+            content: Text('Ustawienia zapisane pomyślnie'), // PL
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -539,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving settings: $e'),
+            content: Text('Błąd zapisu ustawień: $e'), // PL
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -567,7 +568,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Data exported successfully'),
+            content: Text('Dane wyeksportowane pomyślnie'), // PL
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -576,7 +577,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Export failed: $e'),
+            content: Text('Eksport nieudany: $e'), // PL
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -607,7 +608,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Data imported successfully'),
+            content: Text('Dane zaimportowane pomyślnie'), // PL
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -616,7 +617,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Import failed: $e'),
+            content: Text('Import nieudany: $e'), // PL
             backgroundColor: AppTheme.errorColor,
           ),
         );

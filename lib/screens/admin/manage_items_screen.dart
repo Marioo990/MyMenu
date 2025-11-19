@@ -4,7 +4,6 @@ import '../../config/theme.dart';
 import '../../models/menu_item.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/language_provider.dart';
-// Fixed: Added missing SettingsProvider import
 import '../../providers/settings_provider.dart';
 
 class ManageItemsScreen extends StatefulWidget {
@@ -18,16 +17,16 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
   @override
   Widget build(BuildContext context) {
     final menuProvider = Provider.of<MenuProvider>(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    // final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(languageProvider.translate('manage_menu')),
+        title: const Text('Zarządzaj Menu'), // PL
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddItemDialog,
-            tooltip: languageProvider.translate('add_item'),
+            tooltip: 'Dodaj pozycję', // PL
           ),
         ],
       ),
@@ -49,8 +48,10 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
                       : '🍽️',
                 ),
               ),
-              title: Text(item.getName('en')),
-              subtitle: Text('${item.price} ${Provider.of<SettingsProvider>(context).currency}'),
+              // Wyświetlamy nazwę w zależności od dostępności, preferowany polski
+              title: Text(item.name['pl'] ?? item.name['en'] ?? 'Brak nazwy'),
+              subtitle: Text(
+                  '${item.price} ${Provider.of<SettingsProvider>(context).currency}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -73,23 +74,22 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
   }
 
   void _showAddItemDialog() {
-    // Show dialog to add new item
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(Provider.of<LanguageProvider>(context).translate('add_item')),
-        content: const Text('Add item form would go here'),
+        title: const Text('Dodaj pozycję'), // PL
+        content: const Text('Formularz dodawania pozycji pojawi się tutaj'), // PL
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(Provider.of<LanguageProvider>(context).translate('cancel')),
+            child: const Text('Anuluj'), // PL
           ),
           ElevatedButton(
             onPressed: () {
               // Add item logic
               Navigator.pop(context);
             },
-            child: Text(Provider.of<LanguageProvider>(context).translate('save')),
+            child: const Text('Zapisz'), // PL
           ),
         ],
       ),
@@ -97,23 +97,22 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
   }
 
   void _showEditItemDialog(MenuItem item) {
-    // Show dialog to edit item
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(Provider.of<LanguageProvider>(context).translate('edit_item')),
-        content: Text('Edit form for ${item.getName('en')}'),
+        title: const Text('Edytuj pozycję'), // PL
+        content: Text('Formularz edycji dla: ${item.name['pl'] ?? item.name['en']}'), // PL
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(Provider.of<LanguageProvider>(context).translate('cancel')),
+            child: const Text('Anuluj'), // PL
           ),
           ElevatedButton(
             onPressed: () {
               // Edit item logic
               Navigator.pop(context);
             },
-            child: Text(Provider.of<LanguageProvider>(context).translate('save')),
+            child: const Text('Zapisz'), // PL
           ),
         ],
       ),
@@ -124,12 +123,12 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(Provider.of<LanguageProvider>(context).translate('confirm')),
-        content: Text('${Provider.of<LanguageProvider>(context).translate('are_you_sure')} ${item.getName('en')}?'),
+        title: const Text('Potwierdzenie'), // PL
+        content: Text('Czy na pewno usunąć: ${item.name['pl'] ?? item.name['en']}?'), // PL
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(Provider.of<LanguageProvider>(context).translate('no')),
+            child: const Text('Nie'), // PL
           ),
           ElevatedButton(
             onPressed: () async {
@@ -138,9 +137,8 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
                   .deleteMenuItem(item.id);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(Provider.of<LanguageProvider>(context, listen: false)
-                        .translate('item_deleted')),
+                  const SnackBar(
+                    content: Text('Pozycja usunięta'), // PL
                     backgroundColor: AppTheme.successColor,
                   ),
                 );
@@ -149,7 +147,7 @@ class _ManageItemsScreenState extends State<ManageItemsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorColor,
             ),
-            child: Text(Provider.of<LanguageProvider>(context).translate('yes')),
+            child: const Text('Tak'), // PL
           ),
         ],
       ),

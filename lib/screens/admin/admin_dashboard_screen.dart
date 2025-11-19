@@ -18,16 +18,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final menuProvider = Provider.of<MenuProvider>(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    // final languageProvider = Provider.of<LanguageProvider>(context); // Opcjonalne, jeśli nie używamy do innych celów
     final isDesktop = AppTheme.isDesktop(context);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
-        title: Text(
-          languageProvider.translate('dashboard'),
-          style: const TextStyle(color: Colors.white),
+        title: const Text(
+          'Panel Administratora', // PL
+          style: TextStyle(color: Colors.white),
         ),
         actions: [
           // User Info
@@ -60,7 +60,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 );
               }
             },
-            tooltip: languageProvider.translate('logout'),
+            tooltip: 'Wyloguj', // PL
           ),
         ],
       ),
@@ -71,14 +71,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             // Welcome Message
             Text(
-              languageProvider.translate('welcome_admin'),
+              'Witaj Adminie!', // PL
               style: Theme.of(context).textTheme.headlineLarge,
             ),
 
             const SizedBox(height: AppTheme.spacingS),
 
             Text(
-              languageProvider.translate('dashboard_subtitle'),
+              'Zarządzaj menu restauracji i ustawieniami', // PL
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: AppTheme.textSecondary,
               ),
@@ -87,53 +87,53 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(height: AppTheme.spacingXL),
 
             // Statistics Cards
-            _buildStatisticsSection(menuProvider, languageProvider),
+            _buildStatisticsSection(menuProvider),
 
             const SizedBox(height: AppTheme.spacingXL),
 
             // Quick Actions
             Text(
-              languageProvider.translate('quick_actions'),
+              'Szybkie akcje', // PL
               style: Theme.of(context).textTheme.headlineMedium,
             ),
 
             const SizedBox(height: AppTheme.spacingL),
 
             // Action Grid
-            _buildActionGrid(context, languageProvider, isDesktop),
+            _buildActionGrid(context, isDesktop),
 
             const SizedBox(height: AppTheme.spacingXL),
 
             // Recent Activity (placeholder)
-            _buildRecentActivitySection(languageProvider),
+            _buildRecentActivitySection(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatisticsSection(MenuProvider menuProvider, LanguageProvider languageProvider) {
+  Widget _buildStatisticsSection(MenuProvider menuProvider) {
     final stats = [
       {
-        'title': languageProvider.translate('total_items'),
+        'title': 'Wszystkie pozycje', // PL
         'value': menuProvider.menuItems.length.toString(),
         'icon': Icons.restaurant_menu,
         'color': AppTheme.primaryColor,
       },
       {
-        'title': languageProvider.translate('categories'),
+        'title': 'Kategorie', // PL
         'value': menuProvider.categories.length.toString(),
         'icon': Icons.category,
         'color': AppTheme.secondaryColor,
       },
       {
-        'title': languageProvider.translate('active_notifications'),
+        'title': 'Aktywne powiadomienia', // PL
         'value': menuProvider.notifications.where((n) => n.isActive()).length.toString(),
         'icon': Icons.notifications_active,
         'color': AppTheme.warningColor,
       },
       {
-        'title': languageProvider.translate('day_periods'),
+        'title': 'Pory dnia', // PL
         'value': menuProvider.dayPeriods.length.toString(),
         'icon': Icons.schedule,
         'color': AppTheme.successColor,
@@ -215,32 +215,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildActionGrid(BuildContext context, LanguageProvider languageProvider, bool isDesktop) {
+  Widget _buildActionGrid(BuildContext context, bool isDesktop) {
     final actions = [
       {
-        'title': languageProvider.translate('manage_menu'),
-        'subtitle': languageProvider.translate('add_edit_delete_items'),
+        'title': 'Zarządzaj Menu', // PL
+        'subtitle': 'Dodaj, edytuj lub usuń dania', // PL
         'icon': Icons.restaurant_menu,
         'color': AppTheme.primaryColor,
         'route': AppRoutes.adminItems,
       },
       {
-        'title': languageProvider.translate('manage_categories'),
-        'subtitle': languageProvider.translate('organize_menu_categories'),
+        'title': 'Zarządzaj Kategoriami', // PL
+        'subtitle': 'Organizuj kategorie menu', // PL
         'icon': Icons.category,
         'color': AppTheme.secondaryColor,
         'route': AppRoutes.adminCategories,
       },
       {
-        'title': languageProvider.translate('notifications'),
-        'subtitle': languageProvider.translate('create_announcements'),
+        'title': 'Powiadomienia', // PL
+        'subtitle': 'Twórz ogłoszenia', // PL
         'icon': Icons.campaign,
         'color': AppTheme.warningColor,
         'route': AppRoutes.adminNotifications,
       },
       {
-        'title': languageProvider.translate('settings'),
-        'subtitle': languageProvider.translate('configure_restaurant'),
+        'title': 'Ustawienia', // PL
+        'subtitle': 'Konfiguracja restauracji', // PL
         'icon': Icons.settings,
         'color': AppTheme.successColor,
         'route': AppRoutes.adminSettings,
@@ -328,7 +328,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildRecentActivitySection(LanguageProvider languageProvider) {
+  Widget _buildRecentActivitySection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,14 +336,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              languageProvider.translate('recent_activity'),
+              'Ostatnia aktywność', // PL
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             TextButton(
               onPressed: () {
                 // Navigate to activity log
               },
-              child: Text(languageProvider.translate('view_all')),
+              child: const Text('Zobacz wszystko'), // PL
             ),
           ],
         ),
@@ -364,9 +364,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     size: 20,
                   ),
                 ),
-                title: Text(_getActivityTitle(index, languageProvider)),
+                title: Text(_getActivityTitle(index)),
                 subtitle: Text(_getActivityTime(index)),
-                trailing: Icon(
+                trailing: const Icon(
                   Icons.chevron_right,
                   color: AppTheme.textLight,
                 ),
@@ -392,24 +392,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return icons[index % icons.length];
   }
 
-  String _getActivityTitle(int index, LanguageProvider languageProvider) {
+  String _getActivityTitle(int index) {
     final activities = [
-      languageProvider.translate('item_added'),
-      languageProvider.translate('category_updated'),
-      languageProvider.translate('item_deleted'),
-      languageProvider.translate('notification_created'),
-      languageProvider.translate('settings_changed'),
+      'Dodano pozycję', // PL
+      'Zaktualizowano kategorię', // PL
+      'Usunięto pozycję', // PL
+      'Utworzono powiadomienie', // PL
+      'Zmieniono ustawienia', // PL
     ];
     return activities[index % activities.length];
   }
 
   String _getActivityTime(int index) {
     final times = [
-      '2 minutes ago',
-      '15 minutes ago',
-      '1 hour ago',
-      '3 hours ago',
-      'Yesterday',
+      '2 minuty temu', // PL
+      '15 minut temu', // PL
+      '1 godzinę temu', // PL
+      '3 godziny temu', // PL
+      'Wczoraj', // PL
     ];
     return times[index % times.length];
   }

@@ -16,25 +16,25 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final menuProvider = Provider.of<MenuProvider>(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    // final languageProvider = Provider.of<LanguageProvider>(context);
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(languageProvider.translate('manage_notifications')),
+          title: const Text('Zarządzaj powiadomieniami'), // PL
           actions: [
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: () => _showNotificationDialog(null),
-              tooltip: languageProvider.translate('add_notification'),
+              tooltip: 'Dodaj powiadomienie', // PL
             ),
           ],
-          bottom: TabBar(
+          bottom: const TabBar(
             tabs: [
-              Tab(text: languageProvider.translate('active')),
-              Tab(text: languageProvider.translate('scheduled')),
-              Tab(text: languageProvider.translate('expired')),
+              Tab(text: 'Aktywne'), // PL
+              Tab(text: 'Zaplanowane'), // PL
+              Tab(text: 'Wygasłe'), // PL
             ],
           ),
         ),
@@ -44,15 +44,15 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
           children: [
             _buildNotificationsList(
               menuProvider.notifications.where((n) => n.isActive()).toList(),
-              languageProvider.translate('no_active_notifications'),
+              'Brak aktywnych powiadomień', // PL
             ),
             _buildNotificationsList(
               menuProvider.notifications.where((n) => n.isPending()).toList(),
-              languageProvider.translate('no_scheduled_notifications'),
+              'Brak zaplanowanych powiadomień', // PL
             ),
             _buildNotificationsList(
               menuProvider.notifications.where((n) => n.isExpired()).toList(),
-              languageProvider.translate('no_expired_notifications'),
+              'Brak wygasłych powiadomień', // PL
             ),
           ],
         ),
@@ -94,8 +94,9 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
   }
 
   Widget _buildNotificationCard(RestaurantNotification notification) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    final locale = languageProvider.currentLocale.languageCode;
+    // Preferujemy polski tytuł i treść
+    final title = notification.title['pl'] ?? notification.title['en'] ?? 'Bez tytułu';
+    final message = notification.message['pl'] ?? notification.message['en'] ?? 'Brak treści';
 
     Color statusColor;
     IconData statusIcon;
@@ -104,15 +105,15 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
     if (notification.isActive()) {
       statusColor = AppTheme.successColor;
       statusIcon = Icons.check_circle;
-      statusText = languageProvider.translate('active');
+      statusText = 'Aktywne'; // PL
     } else if (notification.isPending()) {
       statusColor = AppTheme.warningColor;
       statusIcon = Icons.schedule;
-      statusText = languageProvider.translate('scheduled');
+      statusText = 'Zaplanowane'; // PL
     } else {
       statusColor = AppTheme.textLight;
       statusIcon = Icons.cancel;
-      statusText = languageProvider.translate('expired');
+      statusText = 'Wygasłe'; // PL
     }
 
     return Card(
@@ -123,7 +124,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
           child: Icon(statusIcon, color: statusColor),
         ),
         title: Text(
-          notification.getTitle(locale),
+          title,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         subtitle: Column(
@@ -131,7 +132,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
           children: [
             const SizedBox(height: AppTheme.spacingXS),
             Text(
-              notification.getMessage(locale),
+              message,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -146,19 +147,19 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                 ),
                 if (notification.pin)
                   Chip(
-                    label: Row(
+                    label: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.push_pin, size: 14),
-                        const SizedBox(width: 4),
-                        Text(languageProvider.translate('pinned')),
+                        Icon(Icons.push_pin, size: 14),
+                        SizedBox(width: 4),
+                        Text('Przypięte'), // PL
                       ],
                     ),
                     backgroundColor: AppTheme.secondaryColor.withOpacity(0.1),
-                    labelStyle: TextStyle(color: AppTheme.secondaryColor, fontSize: 12),
+                    labelStyle: const TextStyle(color: AppTheme.secondaryColor, fontSize: 12),
                   ),
                 Chip(
-                  label: Text('Priority: ${notification.priority}'),
+                  label: Text('Priorytet: ${notification.priority}'), // PL
                   backgroundColor: AppTheme.backgroundColor,
                   labelStyle: const TextStyle(fontSize: 12),
                 ),
@@ -183,7 +184,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                 // Display Options
                 _buildDetailRow(
                   Icons.visibility,
-                  'Banner: ${notification.showAsBanner ? '✓' : '✗'} | Tab: ${notification.showInTab ? '✓' : '✗'}',
+                  'Baner: ${notification.showAsBanner ? '✓' : '✗'} | Zakładka: ${notification.showInTab ? '✓' : '✗'}', // PL
                 ),
 
                 const SizedBox(height: AppTheme.spacingM),
@@ -191,7 +192,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                 // Push Options
                 _buildDetailRow(
                   Icons.send,
-                  'Web Push: ${notification.webPush ? '✓' : '✗'} | In-App: ${notification.inApp ? '✓' : '✗'}',
+                  'Web Push: ${notification.webPush ? '✓' : '✗'} | W aplikacji: ${notification.inApp ? '✓' : '✗'}', // PL
                 ),
 
                 if (notification.deepLink != null) ...[
@@ -211,15 +212,15 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                     TextButton.icon(
                       onPressed: () => _showNotificationDialog(notification),
                       icon: const Icon(Icons.edit, size: 18),
-                      label: Text(languageProvider.translate('edit')),
+                      label: const Text('Edytuj'), // PL
                     ),
                     const SizedBox(width: AppTheme.spacingS),
                     TextButton.icon(
                       onPressed: () => _confirmDelete(notification),
                       icon: const Icon(Icons.delete, size: 18, color: AppTheme.errorColor),
-                      label: Text(
-                        languageProvider.translate('delete'),
-                        style: const TextStyle(color: AppTheme.errorColor),
+                      label: const Text(
+                        'Usuń', // PL
+                        style: TextStyle(color: AppTheme.errorColor),
                       ),
                     ),
                   ],
@@ -250,7 +251,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.day}.${date.month}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   void _showNotificationDialog(RestaurantNotification? notification) {
@@ -276,8 +277,8 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                     SnackBar(
                       content: Text(
                         notification == null
-                            ? 'Notification created'
-                            : 'Notification updated',
+                            ? 'Powiadomienie utworzone' // PL
+                            : 'Powiadomienie zaktualizowane', // PL
                       ),
                       backgroundColor: AppTheme.successColor,
                     ),
@@ -287,7 +288,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e'),
+                      content: Text('Błąd: $e'), // PL
                       backgroundColor: AppTheme.errorColor,
                     ),
                   );
@@ -302,17 +303,15 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
   }
 
   void _confirmDelete(RestaurantNotification notification) {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(languageProvider.translate('confirm_delete')),
-        content: Text('Delete notification: ${notification.getTitle('en')}?'),
+        title: const Text('Potwierdź usunięcie'), // PL
+        content: Text('Usunąć powiadomienie: ${notification.title['pl'] ?? notification.title['en']}?'), // PL
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(languageProvider.translate('cancel')),
+            child: const Text('Anuluj'), // PL
           ),
           ElevatedButton(
             onPressed: () async {
@@ -322,8 +321,8 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                 await menuProvider.deleteNotification(notification.id);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(languageProvider.translate('notification_deleted')),
+                    const SnackBar(
+                      content: Text('Powiadomienie usunięte'), // PL
                       backgroundColor: AppTheme.successColor,
                     ),
                   );
@@ -332,7 +331,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e'),
+                      content: Text('Błąd: $e'), // PL
                       backgroundColor: AppTheme.errorColor,
                     ),
                   );
@@ -340,7 +339,7 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
-            child: Text(languageProvider.translate('delete')),
+            child: const Text('Usuń'), // PL
           ),
         ],
       ),
@@ -348,7 +347,6 @@ class _ManageNotificationsScreenState extends State<ManageNotificationsScreen> {
   }
 }
 
-// Simple Notification Form Dialog
 class _NotificationFormDialog extends StatefulWidget {
   final RestaurantNotification? notification;
   final Function(RestaurantNotification) onSave;
@@ -406,23 +404,21 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
           widget.notification == null
-              ? languageProvider.translate('add_notification')
-              : languageProvider.translate('edit_notification'),
+              ? 'Dodaj powiadomienie' // PL
+              : 'Edytuj powiadomienie', // PL
         ),
         actions: [
           TextButton(
             onPressed: widget.onCancel,
-            child: Text(languageProvider.translate('cancel')),
+            child: const Text('Anuluj'), // PL
           ),
           ElevatedButton(
             onPressed: _save,
-            child: Text(languageProvider.translate('save')),
+            child: const Text('Zapisz'), // PL
           ),
         ],
       ),
@@ -437,16 +433,16 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
               TextFormField(
                 controller: _titleEnController,
                 decoration: const InputDecoration(
-                  labelText: 'Title (English)',
+                  labelText: 'Tytuł (Angielski)', // PL
                   prefixIcon: Icon(Icons.title),
                 ),
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                validator: (value) => value?.isEmpty ?? true ? 'Wymagane' : null,
               ),
               const SizedBox(height: AppTheme.spacingM),
               TextFormField(
                 controller: _titlePlController,
                 decoration: const InputDecoration(
-                  labelText: 'Title (Polish)',
+                  labelText: 'Tytuł (Polski)', // PL
                   prefixIcon: Icon(Icons.title),
                 ),
               ),
@@ -457,17 +453,17 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
               TextFormField(
                 controller: _messageEnController,
                 decoration: const InputDecoration(
-                  labelText: 'Message (English)',
+                  labelText: 'Wiadomość (Angielski)', // PL
                   prefixIcon: Icon(Icons.message),
                 ),
                 maxLines: 3,
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                validator: (value) => value?.isEmpty ?? true ? 'Wymagane' : null,
               ),
               const SizedBox(height: AppTheme.spacingM),
               TextFormField(
                 controller: _messagePlController,
                 decoration: const InputDecoration(
-                  labelText: 'Message (Polish)',
+                  labelText: 'Wiadomość (Polski)', // PL
                   prefixIcon: Icon(Icons.message),
                 ),
                 maxLines: 3,
@@ -479,7 +475,7 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
               TextFormField(
                 initialValue: _priority.toString(),
                 decoration: const InputDecoration(
-                  labelText: 'Priority',
+                  labelText: 'Priorytet', // PL
                   prefixIcon: Icon(Icons.flag),
                 ),
                 keyboardType: TextInputType.number,
@@ -490,17 +486,17 @@ class _NotificationFormDialogState extends State<_NotificationFormDialog> {
 
               // Options
               SwitchListTile(
-                title: Text(languageProvider.translate('show_as_banner')),
+                title: const Text('Pokaż jako baner'), // PL
                 value: _showAsBanner,
                 onChanged: (value) => setState(() => _showAsBanner = value),
               ),
               SwitchListTile(
-                title: Text(languageProvider.translate('show_in_tab')),
+                title: const Text('Pokaż w zakładce'), // PL
                 value: _showInTab,
                 onChanged: (value) => setState(() => _showInTab = value),
               ),
               SwitchListTile(
-                title: Text(languageProvider.translate('pin_notification')),
+                title: const Text('Przypnij powiadomienie'), // PL
                 value: _pin,
                 onChanged: (value) => setState(() => _pin = value),
               ),

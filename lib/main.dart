@@ -234,16 +234,7 @@ class RestaurantMenuApp extends StatelessWidget {
   Route<dynamic> _generateRoute(RouteSettings settings) {
     print('🧭 [_generateRoute] Called with route: ${settings.name}');
     print('🧭 [_generateRoute] Arguments: ${settings.arguments}');
-     // print('🧭 [_generateRoute] Context: ${context.widget.runtimeType}');
 
-    // Sprawdź czy providery są dostępne
-    // try {
-    //   final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-    //   final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-    //   print('✅ [_generateRoute] Providers accessible: menu=${menuProvider != null}, lang=${languageProvider != null}');
-    // } catch (e) {
-    //   print('❌ [_generateRoute] Cannot access providers: $e');
-    // }
 
     try {
       switch (settings.name) {

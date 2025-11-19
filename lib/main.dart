@@ -204,98 +204,127 @@ class RestaurantMenuApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           localeResolutionCallback: (locale, supportedLocales) {
+            print('🌍 Locale resolution: system=$locale, supported=${supportedLocales.map((l) => l.languageCode).toList()}');
+
+            // Zabezpieczenie - zawsze zwróć coś non-null
+            if (supportedLocales.isEmpty) {
+              print('⚠️ No supported locales! Using en-US fallback');
+              return const Locale('en', 'US');
+            }
+
             if (locale != null) {
               for (final supportedLocale in supportedLocales) {
                 if (supportedLocale.languageCode == locale.languageCode) {
+                  print('✅ Matched locale: ${supportedLocale.languageCode}');
                   return supportedLocale;
                 }
               }
             }
+
+            print('✅ Using first supported locale: ${supportedLocales.first.languageCode}');
             return supportedLocales.first;
           },
-          initialRoute: '/',
-          onGenerateRoute: (settings) => _generateRoute(settings, context),
+          home: const MenuScreen(),
+          onGenerateRoute: _generateRoute,
         );
       },
     );
   }
 
-  Route<dynamic> _generateRoute(RouteSettings settings, BuildContext context) {
-    print('🧭 Navigating to: ${settings.name}');
+  Route<dynamic> _generateRoute(RouteSettings settings) {
+    print('🧭 [_generateRoute] Called with route: ${settings.name}');
+    print('🧭 [_generateRoute] Arguments: ${settings.arguments}');
+     // print('🧭 [_generateRoute] Context: ${context.widget.runtimeType}');
 
-    switch (settings.name) {
-      case '/':
-        return MaterialPageRoute(
-          builder: (_) => const MenuScreen(),
-          settings: settings,
-        );
+    // Sprawdź czy providery są dostępne
+    // try {
+    //   final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+    //   final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    //   print('✅ [_generateRoute] Providers accessible: menu=${menuProvider != null}, lang=${languageProvider != null}');
+    // } catch (e) {
+    //   print('❌ [_generateRoute] Cannot access providers: $e');
+    // }
 
-      case '/info':
-        return MaterialPageRoute(
-          builder: (_) => const InfoScreen(),
-          settings: settings,
-        );
-
-      case '/item':
-        final args = settings.arguments as Map<String, dynamic>?;
-        if (args != null && args['itemId'] != null) {
+    try {
+      switch (settings.name) {
+        case '/':
+          print('🏠 [_generateRoute] Building MenuScreen route');
           return MaterialPageRoute(
-            builder: (_) => ItemDetailScreen(itemId: args['itemId']),
+            builder: (_) => const MenuScreen(),
             settings: settings,
           );
-        }
-        return _errorRoute();
 
-    // Admin routes with guard
-      case '/admin':
-      case '/admin/login':
-        return MaterialPageRoute(
-          builder: (_) => const AdminLoginScreen(),
-          settings: settings,
-        );
+        case '/info':
+          return MaterialPageRoute(
+            builder: (_) => const InfoScreen(),
+            settings: settings,
+          );
 
-      case '/admin/dashboard':
-        return MaterialPageRoute(
-          builder: (_) => AdminGuard(
-            child: const AdminDashboardScreen(),
-          ),
-          settings: settings,
-        );
+        case '/item':
+          final args = settings.arguments as Map<String, dynamic>?;
+          if (args != null && args['itemId'] != null) {
+            return MaterialPageRoute(
+              builder: (_) => ItemDetailScreen(itemId: args['itemId']),
+              settings: settings,
+            );
+          }
+          return _errorRoute();
 
-      case '/admin/items':
-        return MaterialPageRoute(
-          builder: (_) => AdminGuard(
-            child: const ManageItemsScreen(),
-          ),
-          settings: settings,
-        );
+        case '/admin':
+        case '/admin/login':
+          return MaterialPageRoute(
+            builder: (_) => const AdminLoginScreen(),
+            settings: settings,
+          );
 
-      case '/admin/categories':
-        return MaterialPageRoute(
-          builder: (_) => AdminGuard(
-            child: const ManageCategoriesScreen(),
-          ),
-          settings: settings,
-        );
+        case '/admin/dashboard':
+          return MaterialPageRoute(
+            builder: (_) => AdminGuard(
+              child: const AdminDashboardScreen(),
+            ),
+            settings: settings,
+          );
 
-      case '/admin/notifications':
-        return MaterialPageRoute(
-          builder: (_) => AdminGuard(
-            child: const ManageNotificationsScreen(),
-          ),
-          settings: settings,
-        );
+        case '/admin/items':
+          return MaterialPageRoute(
+            builder: (_) => AdminGuard(
+              child: const ManageItemsScreen(),
+            ),
+            settings: settings,
+          );
 
-      case '/admin/settings':
-        return MaterialPageRoute(
-          builder: (_) => AdminGuard(
-            child: const SettingsScreen(),
-          ),
-          settings: settings,
-        );
+        case '/admin/categories':
+          return MaterialPageRoute(
+            builder: (_) => AdminGuard(
+              child: const ManageCategoriesScreen(),
+            ),
+            settings: settings,
+          );
 
-      default:
-        return _errorRoute();
+        case '/admin/notifications':
+          return MaterialPageRoute(
+            builder: (_) => AdminGuard(
+              child: const ManageNotificationsScreen(),
+            ),
+            settings: settings,
+          );
+
+        case '/admin/settings':
+          return MaterialPageRoute(
+            builder: (_) => AdminGuard(
+              child: const SettingsScreen(),
+            ),
+            settings: settings,
+          );
+
+        default:
+          print('⚠️ Unknown route: ${settings.name}');
+          return _errorRoute();
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error generating route: $e');
+      print('Stack trace: $stackTrace');
+      return _errorRoute();
     }
   }
 

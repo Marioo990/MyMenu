@@ -3,14 +3,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Funkcja sprawdzająca czy user jest adminem
     function isAdmin() {
-      return request.auth != null &&
-        request.auth.token.email_verified == true &&
-        (
-          request.auth.token.email in ['admin@restaurant.com', 'pizza99069@gmail.com'] ||
-          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-          exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
-        );
-    }
+          return request.auth != null &&
+            request.auth.token.email_verified == true &&
+            (
+              // Sprawdź czy istnieje dokument w kolekcji admins z ID równym ID użytkownika
+              exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+              // LUB czy istnieje dokument w kolekcji admins z ID równym Emailowi użytkownika
+              exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
+            );
+        }
 
     // Użytkownicy mogą czytać własne dane
     match /users/{userId} {

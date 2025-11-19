@@ -8,7 +8,7 @@ class GoogleAuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb
-        ? '927400788077-your-client-id.apps.googleusercontent.com' // Zastąp swoim Client ID
+        ? '927400788077-your-client-id.apps.googleusercontent.com' // Zastąp swoim Client ID jeśli trzeba
         : null,
     scopes: [
       'email',
@@ -17,12 +17,7 @@ class GoogleAuthService {
     ],
   );
 
-  // Whitelist adminów - można przenieść do Firestore
-  static const List<String> adminWhitelist = [
-    'admin@restaurant.com',
-    'mario@example.com', // Dodaj swój email
-    // Dodaj więcej emaili adminów
-  ];
+  // Usunięto hardcoded adminWhitelist - teraz używamy tylko Firestore
 
   // Stream zmian stanu autoryzacji
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -133,7 +128,7 @@ class GoogleAuthService {
       );
     }
 
-    // 2. Sprawdź czy użytkownik jest na whiteliście adminów
+    // 2. Sprawdź czy użytkownik jest adminem (teraz korzysta z poprawionej metody checkAdminAccess)
     final bool isAdmin = await checkAdminAccess(user);
 
     // 3. Zapisz dane użytkownika do Firestore
@@ -160,40 +155,33 @@ class GoogleAuthService {
     );
   }
 
-  /// Sprawdzanie czy użytkownik jest adminem
+  /// Sprawdzanie czy użytkownik jest adminem (Dynamicznie z Firestore)
   Future<bool> checkAdminAccess(User user) async {
     if (user.email == null) return false;
 
-    // Metoda 1: Sprawdź hardcoded whitelist
-    if (adminWhitelist.contains(user.email)) {
-      print('✅ Admin access granted (whitelist)');
-      return true;
-    }
-
-    // Metoda 2: Sprawdź w Firestore
     try {
+      // Sprawdź czy istnieje dokument w kolekcji 'admins' gdzie ID to email
       final adminDoc = await _firestore
+          .collection('admins')
+          .doc(user.email)
+          .get();
+
+      if (adminDoc.exists && adminDoc.data()?['isActive'] == true) {
+        print('✅ Admin access granted (Firestore email found)');
+        return true;
+      }
+
+      // Opcjonalnie: Sprawdź po UID (jeśli dodasz admina po UID zamiast emaila)
+      final adminByUid = await _firestore
           .collection('admins')
           .doc(user.uid)
           .get();
 
-      if (adminDoc.exists && adminDoc.data()?['isActive'] == true) {
-        print('✅ Admin access granted (Firestore)');
+      if (adminByUid.exists && adminByUid.data()?['isActive'] == true) {
+        print('✅ Admin access granted (Firestore UID found)');
         return true;
       }
 
-      // Metoda 3: Sprawdź po emailu w kolekcji admins
-      final adminQuery = await _firestore
-          .collection('admins')
-          .where('email', isEqualTo: user.email)
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
-
-      if (adminQuery.docs.isNotEmpty) {
-        print('✅ Admin access granted (Firestore email)');
-        return true;
-      }
     } catch (e) {
       print('⚠️ Error checking admin access: $e');
     }

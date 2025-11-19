@@ -21,11 +21,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   String? _errorMessage;
 
   // Whitelist adminów - możesz przenieść do Firestore
-  static const List<String> adminWhitelist = [
-    'admin@restaurant.com',
-    'pizza99069@gmail.com', // Dodaj swój email tutaj
+  // static const List<String> adminWhitelist = [
+    // 'admin@restaurant.com',
+    // 'pizza99069@gmail.com',
     // Dodaj więcej emaili adminów
-  ];
+  // ];
 
   @override
   Widget build(BuildContext context) {
@@ -352,34 +352,34 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     if (user.email == null) return false;
 
     // Method 1: Check hardcoded whitelist
-    if (adminWhitelist.contains(user.email)) {
-      print('✅ Admin access granted (whitelist)');
-      return true;
-    }
+    // if (adminWhitelist.contains(user.email)) {
+    //   print('✅ Admin access granted (whitelist)');
+    //   return true;
+    // }
 
     // Method 2: Check in Firestore
     try {
-      // Check by UID
-      final adminDoc = await _firestore
-          .collection('admins')
-          .doc(user.uid)
-          .get();
-
-      if (adminDoc.exists && adminDoc.data()?['isActive'] == true) {
-        print('✅ Admin access granted (Firestore UID)');
-        return true;
-      }
-
-      // Check by email
+      // Sprawdź w Firestore po emailu (to powinno być główne źródło prawdy)
       final adminByEmail = await _firestore
           .collection('admins')
-          .doc(user.email!)
+          .doc(user.email) // Szukamy dokumentu o ID równym emailowi
           .get();
 
       if (adminByEmail.exists && adminByEmail.data()?['isActive'] == true) {
         print('✅ Admin access granted (Firestore email)');
         return true;
       }
+
+      // Sprawdź po UID (opcjonalnie)
+      final adminByUid = await _firestore
+          .collection('admins')
+          .doc(user.uid)
+          .get();
+
+      if (adminByUid.exists && adminByUid.data()?['isActive'] == true) {
+        return true;
+      }
+
     } catch (e) {
       print('⚠️ Error checking admin access: $e');
     }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-import '../../models/category.dart';
-import '../../providers/language_provider.dart';
-
+// import '../../config/theme.dart';
+// import '../../models/category.dart';
+// import '../../providers/language_provider.dart';
+import 'package:restaurant_menu/config/theme.dart';
+import 'package:restaurant_menu/models/category.dart';
+import 'package:restaurant_menu/providers/language_provider.dart';
 class CategoryForm extends StatefulWidget {
   final Category? category;
   final Function(Category) onSave;
@@ -27,7 +29,7 @@ class _CategoryFormState extends State<CategoryForm> {
   late int _order;
   late bool _isActive;
 
-  // Available icons for categories
+  // Dostępne ikony dla kategorii
   final List<String> _availableIcons = [
     '🍽️', '🥗', '🍲', '🍕', '🍝', '🍔', '🥪', '🌮', '🥘', '🍜',
     '🥩', '🍗', '🐟', '🦞', '🍳', '☕', '🍷', '🍺', '🥤', '🍹',
@@ -40,8 +42,8 @@ class _CategoryFormState extends State<CategoryForm> {
 
     final category = widget.category;
 
-    // Initialize name controllers
-    final languages = ['en', 'pl', 'de', 'es', 'fr'];
+    // Inicjalizacja kontrolerów dla języków (PL i EN jako główne)
+    final languages = ['en', 'pl'];
     for (final lang in languages) {
       _nameControllers[lang] = TextEditingController(
         text: category?.name[lang] ?? '',
@@ -68,27 +70,25 @@ class _CategoryFormState extends State<CategoryForm> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          isEditing
-              ? languageProvider.translate('edit_category')
-              : languageProvider.translate('add_category'),
-        ),
+        title: Text(isEditing ? 'Edytuj kategorię' : 'Dodaj kategorię'),
         automaticallyImplyLeading: false,
         actions: [
           TextButton(
             onPressed: widget.onCancel,
-            child: Text(
-              languageProvider.translate('cancel'),
-              style: const TextStyle(color: AppTheme.textSecondary),
+            child: const Text(
+              'Anuluj',
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
           ),
           ElevatedButton(
             onPressed: _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.successColor,
+              foregroundColor: Colors.white,
             ),
-            child: Text(languageProvider.translate('save')),
+            child: const Text('Zapisz'),
           ),
+          const SizedBox(width: 16),
         ],
       ),
       body: Form(
@@ -98,7 +98,7 @@ class _CategoryFormState extends State<CategoryForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Selection
+              // Sekcja ikon
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -110,14 +110,14 @@ class _CategoryFormState extends State<CategoryForm> {
                           const Icon(Icons.emoji_emotions, color: AppTheme.primaryColor),
                           const SizedBox(width: AppTheme.spacingM),
                           Text(
-                            languageProvider.translate('icon'),
+                            'Ikona',
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                         ],
                       ),
                       const SizedBox(height: AppTheme.spacingL),
 
-                      // Current Icon Display
+                      // Podgląd wybranej ikony
                       Center(
                         child: Container(
                           width: 80,
@@ -141,10 +141,11 @@ class _CategoryFormState extends State<CategoryForm> {
 
                       const SizedBox(height: AppTheme.spacingL),
 
-                      // Icon Grid
+                      // Siatka ikon
                       Wrap(
                         spacing: AppTheme.spacingS,
                         runSpacing: AppTheme.spacingS,
+                        alignment: WrapAlignment.center,
                         children: _availableIcons.map((icon) {
                           final isSelected = icon == _selectedIcon;
                           return InkWell(
@@ -186,7 +187,7 @@ class _CategoryFormState extends State<CategoryForm> {
 
               const SizedBox(height: AppTheme.spacingL),
 
-              // Name Fields
+              // Sekcja nazw
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -198,53 +199,39 @@ class _CategoryFormState extends State<CategoryForm> {
                           const Icon(Icons.text_fields, color: AppTheme.secondaryColor),
                           const SizedBox(width: AppTheme.spacingM),
                           Text(
-                            languageProvider.translate('category_names'),
+                            'Nazwa kategorii',
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                         ],
                       ),
                       const SizedBox(height: AppTheme.spacingL),
 
-                      // English (Required)
+                      // Polski
                       TextFormField(
-                        controller: _nameControllers['en'],
-                        decoration: InputDecoration(
-                          labelText: 'Name (English) *',
-                          hintText: 'e.g., Appetizers',
-                          prefixIcon: Text(
-                            languageProvider.getLanguageFlag('en'),
-                            style: const TextStyle(fontSize: 20),
-                          ),
+                        controller: _nameControllers['pl'],
+                        decoration: const InputDecoration(
+                          labelText: 'Nazwa (Polski)',
+                          prefixIcon: Icon(Icons.language),
                         ),
-                        validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'English name is required';
-                          }
-                          return null;
-                        },
                       ),
 
                       const SizedBox(height: AppTheme.spacingM),
 
-                      // Other Languages (Optional)
-                      ..._nameControllers.entries
-                          .where((e) => e.key != 'en')
-                          .map((entry) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: AppTheme.spacingM),
-                          child: TextFormField(
-                            controller: entry.value,
-                            decoration: InputDecoration(
-                              labelText: 'Name (${languageProvider.getLanguageName(entry.key)})',
-                              hintText: 'Optional',
-                              prefixIcon: Text(
-                                languageProvider.getLanguageFlag(entry.key),
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                      // Angielski (Wymagany jako fallback)
+                      TextFormField(
+                        controller: _nameControllers['en'],
+                        decoration: const InputDecoration(
+                          labelText: 'Nazwa (Angielski) *',
+                          prefixIcon: Icon(Icons.language),
+                          helperText: 'Wymagane jako nazwa domyślna',
+                        ),
+                        validator: (value) {
+                          if (value?.isEmpty ?? true) {
+                            return 'Nazwa angielska jest wymagana (technicznie)';
+                          }
+                          return null;
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -252,7 +239,7 @@ class _CategoryFormState extends State<CategoryForm> {
 
               const SizedBox(height: AppTheme.spacingL),
 
-              // Settings
+              // Sekcja ustawień
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -264,21 +251,21 @@ class _CategoryFormState extends State<CategoryForm> {
                           const Icon(Icons.settings, color: AppTheme.warningColor),
                           const SizedBox(width: AppTheme.spacingM),
                           Text(
-                            languageProvider.translate('settings'),
+                            'Ustawienia',
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                         ],
                       ),
                       const SizedBox(height: AppTheme.spacingL),
 
-                      // Order
+                      // Kolejność
                       TextFormField(
                         initialValue: _order.toString(),
-                        decoration: InputDecoration(
-                          labelText: languageProvider.translate('display_order'),
+                        decoration: const InputDecoration(
+                          labelText: 'Kolejność wyświetlania',
                           hintText: '0',
-                          prefixIcon: const Icon(Icons.sort),
-                          helperText: 'Lower numbers appear first',
+                          prefixIcon: Icon(Icons.sort),
+                          helperText: 'Mniejsze liczby wyświetlane są wcześniej',
                         ),
                         keyboardType: TextInputType.number,
                         onChanged: (value) {
@@ -288,13 +275,13 @@ class _CategoryFormState extends State<CategoryForm> {
 
                       const SizedBox(height: AppTheme.spacingM),
 
-                      // Active Status
+                      // Status aktywności
                       SwitchListTile(
-                        title: Text(languageProvider.translate('active')),
+                        title: const Text('Aktywna'),
                         subtitle: Text(
                           _isActive
-                              ? 'Category is visible to customers'
-                              : 'Category is hidden from customers',
+                              ? 'Kategoria jest widoczna dla klientów'
+                              : 'Kategoria jest ukryta',
                         ),
                         value: _isActive,
                         onChanged: (value) {
@@ -311,31 +298,6 @@ class _CategoryFormState extends State<CategoryForm> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: AppTheme.spacingXL),
-
-              // Action Buttons (Mobile)
-              if (AppTheme.isMobile(context))
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: widget.onCancel,
-                        child: Text(languageProvider.translate('cancel')),
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spacingM),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.successColor,
-                        ),
-                        child: Text(languageProvider.translate('save')),
-                      ),
-                    ),
-                  ],
-                ),
             ],
           ),
         ),
@@ -346,7 +308,7 @@ class _CategoryFormState extends State<CategoryForm> {
   void _save() {
     if (!_formKey.currentState!.validate()) return;
 
-    // Build name map
+    // Budowanie mapy nazw
     final nameMap = <String, String>{};
     _nameControllers.forEach((lang, controller) {
       if (controller.text.isNotEmpty) {
@@ -354,15 +316,12 @@ class _CategoryFormState extends State<CategoryForm> {
       }
     });
 
-    // Ensure at least English name exists
-    if (!nameMap.containsKey('en')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('English name is required'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
-      return;
+    // Zabezpieczenie: jeśli nie wpisano polskiego, użyj angielskiego i vice versa
+    if (!nameMap.containsKey('en') && nameMap.containsKey('pl')) {
+      nameMap['en'] = nameMap['pl']!;
+    }
+    if (!nameMap.containsKey('pl') && nameMap.containsKey('en')) {
+      nameMap['pl'] = nameMap['en']!;
     }
 
     final category = Category(

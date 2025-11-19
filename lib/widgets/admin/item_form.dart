@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:typed_data';
+import 'package:image_picker_web/image_picker_web.dart';
 import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../models/menu_item.dart';
-// Removed unused import: import '../../models/category.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/language_provider.dart';
+import '../../services/firebase_service.dart';
 
 class ItemForm extends StatefulWidget {
   final MenuItem? item;
@@ -27,16 +29,15 @@ class _ItemFormState extends State<ItemForm> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _nameControllers = {};
   final Map<String, TextEditingController> _descriptionControllers = {};
+  final Map<String, TextEditingController> _ingredientsControllers = {};
+
   final _priceController = TextEditingController();
   final _caloriesController = TextEditingController();
 
-  // Macros controllers
+  // Macros
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
   final _fatController = TextEditingController();
-  final _fiberController = TextEditingController();
-  final _sugarController = TextEditingController();
-  final _sodiumController = TextEditingController();
 
   String? _selectedCategoryId;
   final Set<String> _selectedTags = {};
@@ -46,92 +47,105 @@ class _ItemFormState extends State<ItemForm> {
   int _order = 0;
   bool _isActive = true;
 
+  // Image handling
+  String? _imageUrl;
+  Uint8List? _newImageBytes;
+  bool _isUploading = false;
+
   @override
   void initState() {
     super.initState();
-
     final item = widget.item;
 
-    // Initialize name and description controllers
-    final languages = ['en', 'pl', 'de', 'es', 'fr'];
+    // Initialize language fields
+    final languages = ['en', 'pl']; // Główne języki
     for (final lang in languages) {
-      _nameControllers[lang] = TextEditingController(
-        text: item?.name[lang] ?? '',
-      );
-      _descriptionControllers[lang] = TextEditingController(
-        text: item?.description[lang] ?? '',
-      );
+      _nameControllers[lang] = TextEditingController(text: item?.name[lang] ?? '');
+
+      // Wyciąganie składników z opisu, jeśli istnieją
+      String desc = item?.description[lang] ?? '';
+      String ingredients = '';
+      String separator = lang == 'pl' ? 'Składniki:' : 'Ingredients:';
+
+      if (desc.contains(separator)) {
+        final parts = desc.split(separator);
+        desc = parts[0].trim();
+        if (parts.length > 1) ingredients = parts[1].trim();
+      }
+
+      _descriptionControllers[lang] = TextEditingController(text: desc);
+      _ingredientsControllers[lang] = TextEditingController(text: ingredients);
     }
 
-    // Initialize other fields
-    _priceController.text = item?.price.toStringAsFixed(2) ?? '';
+    _priceController.text = item?.price.toString() ?? '';
     _caloriesController.text = item?.calories?.toString() ?? '';
     _selectedCategoryId = item?.categoryId;
+    _imageUrl = item?.imageUrl;
     _spiciness = item?.spiciness ?? 0;
     _order = item?.order ?? 0;
     _isActive = item?.isActive ?? true;
 
-    // Initialize tags and allergens
     if (item != null) {
       _selectedTags.addAll(item.tags);
       _selectedAllergens.addAll(item.allergens);
       _selectedDayPeriods.addAll(item.dayPeriods);
     }
 
-    // Initialize macros
     if (item?.macros != null) {
       _proteinController.text = item!.macros!['protein']?.toString() ?? '';
       _carbsController.text = item.macros!['carbs']?.toString() ?? '';
       _fatController.text = item.macros!['fat']?.toString() ?? '';
-      _fiberController.text = item.macros!['fiber']?.toString() ?? '';
-      _sugarController.text = item.macros!['sugar']?.toString() ?? '';
-      _sodiumController.text = item.macros!['sodium']?.toString() ?? '';
     }
   }
 
   @override
   void dispose() {
-    for (final controller in _nameControllers.values) {
-      controller.dispose();
-    }
-    for (final controller in _descriptionControllers.values) {
-      controller.dispose();
-    }
+    // Clean up controllers
+    for (var c in _nameControllers.values) c.dispose();
+    for (var c in _descriptionControllers.values) c.dispose();
+    for (var c in _ingredientsControllers.values) c.dispose();
     _priceController.dispose();
     _caloriesController.dispose();
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
-    _fiberController.dispose();
-    _sugarController.dispose();
-    _sodiumController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final Uint8List? bytes = await ImagePickerWeb.getImageAsBytes();
+      if (bytes != null) {
+        setState(() {
+          _newImageBytes = bytes;
+        });
+      }
+    } catch (e) {
+      print('Błąd wyboru zdjęcia: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
     final menuProvider = Provider.of<MenuProvider>(context);
+    // final languageProvider = Provider.of<LanguageProvider>(context); // Nieużywane
     final isEditing = widget.item != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          isEditing
-              ? languageProvider.translate('edit_item')
-              : languageProvider.translate('add_item'),
-        ),
-        automaticallyImplyLeading: false,
+        title: Text(isEditing ? 'Edytuj pozycję' : 'Nowa pozycja'),
         actions: [
-          TextButton(
-            onPressed: widget.onCancel,
-            child: Text(languageProvider.translate('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: _save,
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor),
-            child: Text(languageProvider.translate('save')),
-          ),
+          if (_isUploading)
+            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+          if (!_isUploading) ...[
+            TextButton(onPressed: widget.onCancel, child: const Text('Anuluj')),
+            ElevatedButton(
+              onPressed: _save,
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor, foregroundColor: Colors.white),
+              child: const Text('Zapisz'),
+            ),
+            const SizedBox(width: 16),
+          ]
         ],
       ),
       body: Form(
@@ -141,28 +155,143 @@ class _ItemFormState extends State<ItemForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Basic Information
-              _buildBasicInfoSection(menuProvider, languageProvider),
+              // 1. Sekcja Zdjęcia i Kategorii
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Zdjęcie
+                  InkWell(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                        border: Border.all(color: Colors.grey[400]!),
+                        image: _newImageBytes != null
+                            ? DecorationImage(image: MemoryImage(_newImageBytes!), fit: BoxFit.cover)
+                            : (_imageUrl != null
+                            ? DecorationImage(image: NetworkImage(_imageUrl!), fit: BoxFit.cover)
+                            : null),
+                      ),
+                      child: _newImageBytes == null && _imageUrl == null
+                          ? const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [Icon(Icons.add_a_photo, size: 40), Text("Dodaj zdjęcie")],
+                      )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingL),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _selectedCategoryId,
+                          decoration: const InputDecoration(labelText: 'Kategoria *', prefixIcon: Icon(Icons.category)),
+                          items: menuProvider.categories.map((c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text("${c.getDisplayIcon()} ${c.getName('pl')}"),
+                          )).toList(),
+                          onChanged: (v) => setState(() => _selectedCategoryId = v),
+                          validator: (v) => v == null ? 'Wymagane' : null,
+                        ),
+                        const SizedBox(height: AppTheme.spacingM),
+                        TextFormField(
+                          controller: _priceController,
+                          decoration: const InputDecoration(labelText: 'Cena *', prefixIcon: Icon(Icons.attach_money)),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          validator: (v) => v!.isEmpty ? 'Wymagane' : null,
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
 
               const SizedBox(height: AppTheme.spacingL),
+              const Divider(),
 
-              // Dietary Information
-              _buildDietarySection(languageProvider),
-
-              const SizedBox(height: AppTheme.spacingL),
-
-              // Nutrition Information
-              _buildNutritionSection(languageProvider),
-
-              const SizedBox(height: AppTheme.spacingL),
-
-              // Availability
-              _buildAvailabilitySection(menuProvider, languageProvider),
+              // 2. Nazwy i Opisy
+              _buildSectionHeader('Informacje o daniu'),
+              _buildLanguageFields('pl', 'Polski', Icons.restaurant),
+              const SizedBox(height: AppTheme.spacingM),
+              _buildLanguageFields('en', 'Angielski', Icons.language),
 
               const SizedBox(height: AppTheme.spacingL),
+              const Divider(),
 
-              // Settings
-              _buildSettingsSection(languageProvider),
+              // 3. Dieta i Alergeny
+              _buildSectionHeader('Dieta i Alergeny'),
+              Wrap(
+                spacing: 8,
+                children: AppConstants.dietaryTags.map((tag) => FilterChip(
+                  label: Text(tag),
+                  selected: _selectedTags.contains(tag),
+                  onSelected: (s) => setState(() => s ? _selectedTags.add(tag) : _selectedTags.remove(tag)),
+                )).toList(),
+              ),
+              const SizedBox(height: 8),
+              const Text("Alergeny:", style: TextStyle(fontWeight: FontWeight.bold)),
+              Wrap(
+                spacing: 8,
+                children: AppConstants.commonAllergens.map((a) => FilterChip(
+                  label: Text(a),
+                  selected: _selectedAllergens.contains(a),
+                  selectedColor: Colors.red[100],
+                  onSelected: (s) => setState(() => s ? _selectedAllergens.add(a) : _selectedAllergens.remove(a)),
+                )).toList(),
+              ),
+
+              const SizedBox(height: AppTheme.spacingL),
+              const Divider(),
+
+              // 4. Wartości odżywcze
+              _buildSectionHeader('Wartości odżywcze'),
+              Row(
+                children: [
+                  Expanded(child: TextFormField(controller: _caloriesController, decoration: const InputDecoration(labelText: 'Kalorie (kcal)'))),
+                  const SizedBox(width: 16),
+                  Expanded(child: TextFormField(controller: _proteinController, decoration: const InputDecoration(labelText: 'Białko (g)'))),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: TextFormField(controller: _carbsController, decoration: const InputDecoration(labelText: 'Węglowodany (g)'))),
+                  const SizedBox(width: 16),
+                  Expanded(child: TextFormField(controller: _fatController, decoration: const InputDecoration(labelText: 'Tłuszcz (g)'))),
+                ],
+              ),
+
+              const SizedBox(height: AppTheme.spacingL),
+              const Divider(),
+
+              // 5. Ustawienia
+              _buildSectionHeader('Ustawienia'),
+              Row(
+                children: [
+                  const Text("Ostrość: "),
+                  ...List.generate(4, (index) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ChoiceChip(
+                      label: Text(index == 0 ? 'Łagodne' : '🌶️' * index),
+                      selected: _spiciness == index,
+                      onSelected: (s) => setState(() => _spiciness = index),
+                    ),
+                  )),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Aktywne'),
+                subtitle: const Text('Widoczne dla klientów'),
+                value: _isActive,
+                onChanged: (v) => setState(() => _isActive = v),
+              ),
+
+              const SizedBox(height: 50),
             ],
           ),
         ),
@@ -170,151 +299,41 @@ class _ItemFormState extends State<ItemForm> {
     );
   }
 
-  Widget _buildBasicInfoSection(MenuProvider menuProvider, LanguageProvider languageProvider) {
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.primaryColor)),
+    );
+  }
+
+  Widget _buildLanguageFields(String langCode, String langName, IconData icon) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.info, color: AppTheme.primaryColor),
-                const SizedBox(width: AppTheme.spacingM),
-                Text(
-                  'Basic Information',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ],
+            Text(langName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _nameControllers[langCode],
+              decoration: InputDecoration(labelText: 'Nazwa ($langCode)', prefixIcon: Icon(icon)),
+              validator: (v) => langCode == 'en' && (v?.isEmpty ?? true) ? 'Nazwa (EN) jest wymagana' : null,
             ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Category Selection
-            DropdownButtonFormField<String>(
-              value: _selectedCategoryId,
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descriptionControllers[langCode],
+              decoration: InputDecoration(labelText: 'Opis ($langCode)'),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _ingredientsControllers[langCode],
               decoration: InputDecoration(
-                labelText: languageProvider.translate('category'),
-                prefixIcon: const Icon(Icons.category),
+                labelText: 'Składniki ($langCode) - opcjonalne',
+                prefixIcon: const Icon(Icons.list),
+                helperText: 'Będą wyświetlane w sekcji szczegółów', // Poprawione miejsce parametru helperText
               ),
-              items: menuProvider.categories.map((category) {
-                return DropdownMenuItem(
-                  value: category.id,
-                  child: Row(
-                    children: [
-                      Text(category.getDisplayIcon()),
-                      const SizedBox(width: AppTheme.spacingM),
-                      Text(category.getName('en')),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCategoryId = value;
-                });
-              },
-              validator: (value) {
-                if (value == null) {
-                  return 'Please select a category';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Name Fields
-            TextFormField(
-              controller: _nameControllers['en'],
-              decoration: const InputDecoration(
-                labelText: 'Name (English) *',
-                prefixIcon: Text('🇬🇧', style: TextStyle(fontSize: 20)),
-              ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'English name is required';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingM),
-
-            // Other language names
-            ..._nameControllers.entries
-                .where((e) => e.key != 'en')
-                .map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppTheme.spacingM),
-                child: TextFormField(
-                  controller: entry.value,
-                  decoration: InputDecoration(
-                    labelText: 'Name (${languageProvider.getLanguageName(entry.key)})',
-                    prefixIcon: Text(
-                      languageProvider.getLanguageFlag(entry.key),
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Description Fields
-            TextFormField(
-              controller: _descriptionControllers['en'],
-              decoration: const InputDecoration(
-                labelText: 'Description (English) *',
-                prefixIcon: Icon(Icons.description),
-              ),
-              maxLines: 3,
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'English description is required';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingM),
-
-            // Other language descriptions
-            ..._descriptionControllers.entries
-                .where((e) => e.key != 'en')
-                .map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppTheme.spacingM),
-                child: TextFormField(
-                  controller: entry.value,
-                  decoration: InputDecoration(
-                    labelText: 'Description (${languageProvider.getLanguageName(entry.key)})',
-                    prefixIcon: const Icon(Icons.description),
-                  ),
-                  maxLines: 3,
-                ),
-              );
-            }).toList(),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Price
-            TextFormField(
-              controller: _priceController,
-              decoration: const InputDecoration(
-                labelText: 'Price *',
-                prefixIcon: Icon(Icons.attach_money),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Price is required';
-                }
-                if (double.tryParse(value!) == null) {
-                  return 'Invalid price';
-                }
-                return null;
-              },
             ),
           ],
         ),
@@ -322,419 +341,70 @@ class _ItemFormState extends State<ItemForm> {
     );
   }
 
-  Widget _buildDietarySection(LanguageProvider languageProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.restaurant_menu, color: AppTheme.secondaryColor),
-                const SizedBox(width: AppTheme.spacingM),
-                Text(
-                  'Dietary Information',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Dietary Tags
-            Text(
-              'Dietary Tags',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: AppTheme.spacingS),
-            Wrap(
-              spacing: AppTheme.spacingS,
-              runSpacing: AppTheme.spacingS,
-              children: AppConstants.dietaryTags.map((tag) {
-                final isSelected = _selectedTags.contains(tag);
-                return FilterChip(
-                  label: Text(tag),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedTags.add(tag);
-                      } else {
-                        _selectedTags.remove(tag);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Allergens
-            Text(
-              'Allergens',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: AppTheme.spacingS),
-            Wrap(
-              spacing: AppTheme.spacingS,
-              runSpacing: AppTheme.spacingS,
-              children: AppConstants.commonAllergens.map((allergen) {
-                final isSelected = _selectedAllergens.contains(allergen);
-                return FilterChip(
-                  label: Text(allergen),
-                  selected: isSelected,
-                  selectedColor: AppTheme.warningColor.withOpacity(0.2),
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedAllergens.add(allergen);
-                      } else {
-                        _selectedAllergens.remove(allergen);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Spiciness
-            Text(
-              'Spiciness Level',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: AppTheme.spacingS),
-            Row(
-              children: [
-                for (int i = 0; i <= 3; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppTheme.spacingS),
-                    child: ChoiceChip(
-                      label: Text(_getSpicinessLabel(i)),
-                      selected: _spiciness == i,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _spiciness = i;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNutritionSection(LanguageProvider languageProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.local_fire_department, color: AppTheme.warningColor),
-                const SizedBox(width: AppTheme.spacingM),
-                Text(
-                  'Nutrition Information',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Calories
-            TextFormField(
-              controller: _caloriesController,
-              decoration: const InputDecoration(
-                labelText: 'Calories',
-                prefixIcon: Icon(Icons.local_fire_department),
-                suffixText: 'kcal',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Macros
-            Text(
-              'Macronutrients',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: AppTheme.spacingM),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _proteinController,
-                    decoration: const InputDecoration(
-                      labelText: 'Protein',
-                      suffixText: 'g',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: TextFormField(
-                    controller: _carbsController,
-                    decoration: const InputDecoration(
-                      labelText: 'Carbs',
-                      suffixText: 'g',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: TextFormField(
-                    controller: _fatController,
-                    decoration: const InputDecoration(
-                      labelText: 'Fat',
-                      suffixText: 'g',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppTheme.spacingM),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _fiberController,
-                    decoration: const InputDecoration(
-                      labelText: 'Fiber',
-                      suffixText: 'g',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: TextFormField(
-                    controller: _sugarController,
-                    decoration: const InputDecoration(
-                      labelText: 'Sugar',
-                      suffixText: 'g',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: TextFormField(
-                    controller: _sodiumController,
-                    decoration: const InputDecoration(
-                      labelText: 'Sodium',
-                      suffixText: 'mg',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAvailabilitySection(MenuProvider menuProvider, LanguageProvider languageProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.schedule, color: AppTheme.successColor),
-                const SizedBox(width: AppTheme.spacingM),
-                Text(
-                  'Availability',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Day Periods
-            if (menuProvider.dayPeriods.isNotEmpty) ...[
-              Text(
-                'Day Periods',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: AppTheme.spacingS),
-              Wrap(
-                spacing: AppTheme.spacingS,
-                runSpacing: AppTheme.spacingS,
-                children: menuProvider.dayPeriods.map((period) {
-                  final isSelected = _selectedDayPeriods.contains(period.id);
-                  return FilterChip(
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(period.getDisplayIcon()),
-                        const SizedBox(width: AppTheme.spacingXS),
-                        Text(period.getName('en')),
-                      ],
-                    ),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedDayPeriods.add(period.id);
-                        } else {
-                          _selectedDayPeriods.remove(period.id);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsSection(LanguageProvider languageProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.settings, color: AppTheme.textSecondary),
-                const SizedBox(width: AppTheme.spacingM),
-                Text(
-                  'Settings',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Display Order
-            TextFormField(
-              initialValue: _order.toString(),
-              decoration: const InputDecoration(
-                labelText: 'Display Order',
-                prefixIcon: Icon(Icons.sort),
-                helperText: 'Lower numbers appear first',
-              ),
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                _order = int.tryParse(value) ?? 0;
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingM),
-
-            // Active Status
-            SwitchListTile(
-              title: Text(languageProvider.translate('active')),
-              subtitle: const Text('Item is visible to customers'),
-              value: _isActive,
-              onChanged: (value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getSpicinessLabel(int level) {
-    switch (level) {
-      case 0:
-        return 'None';
-      case 1:
-        return '🌶️';
-      case 2:
-        return '🌶️🌶️';
-      case 3:
-        return '🌶️🌶️🌶️';
-      default:
-        return 'None';
-    }
-  }
-
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Build name and description maps
-    final nameMap = <String, String>{};
-    final descriptionMap = <String, String>{};
+    setState(() => _isUploading = true);
 
-    _nameControllers.forEach((lang, controller) {
-      if (controller.text.isNotEmpty) {
-        nameMap[lang] = controller.text;
+    try {
+      // 1. Upload image if new one selected
+      String? finalImageUrl = _imageUrl;
+      if (_newImageBytes != null) {
+        final firebaseService = Provider.of<FirebaseService>(context, listen: false);
+        final fileName = 'menu_items/${DateTime.now().millisecondsSinceEpoch}.jpg';
+        finalImageUrl = await firebaseService.uploadImage(fileName, _newImageBytes!);
       }
-    });
 
-    _descriptionControllers.forEach((lang, controller) {
-      if (controller.text.isNotEmpty) {
-        descriptionMap[lang] = controller.text;
-      }
-    });
+      // 2. Prepare Data
+      final nameMap = <String, String>{};
+      final descMap = <String, String>{};
 
-    // Build macros map
-    final macros = <String, dynamic>{};
-    if (_proteinController.text.isNotEmpty) {
-      macros['protein'] = double.tryParse(_proteinController.text);
-    }
-    if (_carbsController.text.isNotEmpty) {
-      macros['carbs'] = double.tryParse(_carbsController.text);
-    }
-    if (_fatController.text.isNotEmpty) {
-      macros['fat'] = double.tryParse(_fatController.text);
-    }
-    if (_fiberController.text.isNotEmpty) {
-      macros['fiber'] = double.tryParse(_fiberController.text);
-    }
-    if (_sugarController.text.isNotEmpty) {
-      macros['sugar'] = double.tryParse(_sugarController.text);
-    }
-    if (_sodiumController.text.isNotEmpty) {
-      macros['sodium'] = double.tryParse(_sodiumController.text);
-    }
+      _nameControllers.forEach((lang, ctrl) {
+        if (ctrl.text.isNotEmpty) nameMap[lang] = ctrl.text;
+      });
 
-    final item = MenuItem(
-      id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: nameMap,
-      description: descriptionMap,
-      price: double.parse(_priceController.text),
-      categoryId: _selectedCategoryId!,
-      calories: int.tryParse(_caloriesController.text),
-      allergens: _selectedAllergens.toList(),
-      spiciness: _spiciness,
-      dayPeriods: _selectedDayPeriods.toList(),
-      tags: _selectedTags.toList(),
-      macros: macros.isNotEmpty ? macros : null,
-      isActive: _isActive,
-      order: _order,
-      createdAt: widget.item?.createdAt,
-    );
+      // Combine description and ingredients
+      _descriptionControllers.forEach((lang, ctrl) {
+        String fullDesc = ctrl.text;
+        String ingredients = _ingredientsControllers[lang]?.text ?? '';
 
-    widget.onSave(item);
+        if (ingredients.isNotEmpty) {
+          String prefix = lang == 'pl' ? 'Składniki:' : 'Ingredients:';
+          fullDesc = '$fullDesc\n\n$prefix $ingredients';
+        }
+
+        if (fullDesc.isNotEmpty) descMap[lang] = fullDesc;
+      });
+
+      final macros = <String, dynamic>{};
+      if (_proteinController.text.isNotEmpty) macros['protein'] = double.tryParse(_proteinController.text);
+      if (_carbsController.text.isNotEmpty) macros['carbs'] = double.tryParse(_carbsController.text);
+      if (_fatController.text.isNotEmpty) macros['fat'] = double.tryParse(_fatController.text);
+
+      // 3. Create Object
+      final item = MenuItem(
+        id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: nameMap,
+        description: descMap,
+        price: double.tryParse(_priceController.text) ?? 0.0,
+        categoryId: _selectedCategoryId!,
+        imageUrl: finalImageUrl,
+        calories: int.tryParse(_caloriesController.text),
+        allergens: _selectedAllergens.toList(),
+        spiciness: _spiciness,
+        dayPeriods: _selectedDayPeriods.toList(),
+        tags: _selectedTags.toList(),
+        macros: macros.isNotEmpty ? macros : null,
+        isActive: _isActive,
+        order: _order,
+        createdAt: widget.item?.createdAt,
+      );
+
+      widget.onSave(item);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Błąd zapisu: $e')));
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 }

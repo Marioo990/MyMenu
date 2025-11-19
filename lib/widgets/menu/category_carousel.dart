@@ -38,7 +38,8 @@ class _CategoryCarouselState extends State<CategoryCarousel> {
     final isDesktop = AppTheme.isDesktop(context);
 
     return Container(
-      height: isDesktop ? 80 : 110,
+      // POPRAWKA: Zwiększono wysokość, aby pomieścić ikonę, nazwę i licznik bez błędu overflow
+      height: isDesktop ? 100 : 130,
       decoration: const BoxDecoration(
         color: AppTheme.surfaceColor,
         boxShadow: [
@@ -77,29 +78,33 @@ class _CategoryCarouselState extends State<CategoryCarousel> {
   }
 
   Widget _buildCategoryChip(Category category, bool isSelected, bool isDesktop) {
+    final itemCount = _getItemCount(category);
+    // Pokaż licznik tylko jeśli jest > 0 i kategoria powinna go pokazywać
+    final showCount = _shouldShowItemCount(category) && itemCount > 0;
+
     return AnimatedContainer(
       duration: AppTheme.animationFast,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Toggle selection - if already selected, deselect (show all)
             if (isSelected) {
               widget.onCategorySelected(null);
             } else {
               widget.onCategorySelected(category.id);
             }
 
-            // Scroll to make selected category visible
             if (!isSelected) {
               _scrollToCategory(category);
             }
           },
           borderRadius: BorderRadius.circular(AppTheme.radiusL),
           child: Container(
+            // Minimalna szerokość dla lepszego wyglądu
+            constraints: const BoxConstraints(minWidth: 80),
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? AppTheme.spacingL : AppTheme.spacingM,
-              vertical: isDesktop ? AppTheme.spacingM : AppTheme.spacingS,
+              vertical: AppTheme.spacingS, // Ujednolicone paddingi pionowe
             ),
             decoration: BoxDecoration(
               color: isSelected ? AppTheme.primaryColor : AppTheme.backgroundColor,
@@ -133,18 +138,21 @@ class _CategoryCarouselState extends State<CategoryCarousel> {
                 const SizedBox(height: AppTheme.spacingXS),
 
                 // Name
-                Text(
-                  category.getName(widget.locale),
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: isSelected ? Colors.white : AppTheme.textPrimary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                Flexible(
+                  child: Text(
+                    category.getName(widget.locale),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: isSelected ? Colors.white : AppTheme.textPrimary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
 
                 // Item count badge (optional)
-                if (_shouldShowItemCount(category))
+                if (showCount)
                   Padding(
                     padding: const EdgeInsets.only(top: AppTheme.spacingXS),
                     child: Container(
@@ -159,7 +167,7 @@ class _CategoryCarouselState extends State<CategoryCarousel> {
                         borderRadius: BorderRadius.circular(AppTheme.radiusRound),
                       ),
                       child: Text(
-                        _getItemCount(category).toString(),
+                        itemCount.toString(),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -177,31 +185,28 @@ class _CategoryCarouselState extends State<CategoryCarousel> {
   }
 
   void _scrollToCategory(Category category) {
-    // Calculate position to scroll to
     final index = widget.categories.indexOf(category);
     if (index == -1) return;
 
-    // Estimate item width (this is approximate)
     const itemWidth = 100.0;
     final targetPosition = index * itemWidth;
 
-    // Scroll to position with animation
-    _scrollController.animateTo(
-      targetPosition,
-      duration: AppTheme.animationNormal,
-      curve: Curves.easeInOut,
-    );
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        targetPosition,
+        duration: AppTheme.animationNormal,
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   bool _shouldShowItemCount(Category category) {
-    // Don't show count for special categories
     return category.id != SpecialCategories.all &&
         category.id != SpecialCategories.favorites;
   }
 
   int _getItemCount(Category category) {
-    // This would be implemented with actual item count from provider
-    // For now, return a placeholder
+    // TODO: Połącz z MenuProvider, aby pobrać faktyczną liczbę
     return 0;
   }
 }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-// Fixed: Using alias for Category to avoid conflicts
-import '../../models/category.dart' as app_models;
-import '../../providers/menu_provider.dart';
-import '../../providers/language_provider.dart';
-// Fixed: Correct import path for CategoryForm
-import '../../widgets/admin/category_form.dart';
+// Używamy importów absolutnych (package:), aby uniknąć błędów typów i case-sensitivity
+import 'package:restaurant_menu/config/theme.dart';
+import 'package:restaurant_menu/models/category.dart' as app_models;
+import 'package:restaurant_menu/providers/menu_provider.dart';
+// import 'package:restaurant_menu/providers/language_provider.dart'; // Opcjonalne, jeśli nieużywane
+import 'package:restaurant_menu/widgets/admin/category_form.dart';
 
 class ManageCategoriesScreen extends StatefulWidget {
   const ManageCategoriesScreen({super.key});
@@ -19,16 +18,15 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final menuProvider = Provider.of<MenuProvider>(context);
-    // final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Zarządzaj Kategoriami'), // PL
+        title: const Text('Zarządzaj Kategoriami'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showCategoryDialog(null),
-            tooltip: 'Dodaj kategorię', // PL
+            tooltip: 'Dodaj kategorię',
           ),
         ],
       ),
@@ -53,14 +51,14 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.category_outlined,
             size: 80,
             color: AppTheme.textLight,
           ),
           const SizedBox(height: AppTheme.spacingL),
           Text(
-            'Brak kategorii', // PL
+            'Brak kategorii',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -69,7 +67,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
           ElevatedButton.icon(
             onPressed: () => _showCategoryDialog(null),
             icon: const Icon(Icons.add),
-            label: const Text('Dodaj pierwszą kategorię'), // PL
+            label: const Text('Dodaj pierwszą kategorię'),
           ),
         ],
       ),
@@ -78,7 +76,6 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   Widget _buildCategoryCard(app_models.Category category, int index) {
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-    // final languageProvider = Provider.of<LanguageProvider>(context);
     final itemCount = menuProvider.getItemsCountByCategory(category.id);
 
     return Card(
@@ -103,7 +100,6 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Preferuj polską nazwę
                   Text(
                     category.name['pl'] ?? category.name['en'] ?? 'Bez nazwy',
                     style: Theme.of(context).textTheme.headlineSmall,
@@ -125,19 +121,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
           child: Row(
             children: [
               Chip(
-                label: Text('$itemCount pozycji'), // PL
+                label: Text('$itemCount pozycji'),
                 backgroundColor: AppTheme.backgroundColor,
               ),
               const SizedBox(width: AppTheme.spacingS),
               if (category.isActive)
                 Chip(
-                  label: const Text('Aktywna'), // PL
+                  label: const Text('Aktywna'),
                   backgroundColor: AppTheme.successColor.withOpacity(0.1),
                   labelStyle: const TextStyle(color: AppTheme.successColor),
                 )
               else
                 Chip(
-                  label: const Text('Nieaktywna'), // PL
+                  label: const Text('Nieaktywna'),
                   backgroundColor: AppTheme.errorColor.withOpacity(0.1),
                   labelStyle: const TextStyle(color: AppTheme.errorColor),
                 ),
@@ -152,8 +148,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               child: Row(
                 children: [
                   Icon(Icons.edit, size: 20),
-                  SizedBox(width: AppTheme.spacingM),
-                  Text('Edytuj'), // PL
+                  SizedBox(width: 16),
+                  Text('Edytuj'),
                 ],
               ),
             ),
@@ -165,11 +161,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     category.isActive ? Icons.visibility_off : Icons.visibility,
                     size: 20,
                   ),
-                  const SizedBox(width: AppTheme.spacingM),
+                  SizedBox(width: 16),
                   Text(
-                    category.isActive
-                        ? 'Dezaktywuj' // PL
-                        : 'Aktywuj', // PL
+                    category.isActive ? 'Dezaktywuj' : 'Aktywuj',
                   ),
                 ],
               ),
@@ -180,9 +174,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               child: Row(
                 children: [
                   Icon(Icons.delete, size: 20, color: AppTheme.errorColor),
-                  SizedBox(width: AppTheme.spacingM),
+                  SizedBox(width: 16),
                   Text(
-                    'Usuń', // PL
+                    'Usuń',
                     style: TextStyle(color: AppTheme.errorColor),
                   ),
                 ],
@@ -196,7 +190,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   String _getOtherLanguages(app_models.Category category) {
     final languages = category.name.entries
-        .where((e) => e.key != 'pl') // Zmieniono z 'en' na 'pl' aby pokazać inne niż główny
+        .where((e) => e.key != 'pl')
         .map((e) => '${_getFlagForLanguage(e.key)} ${e.value}')
         .join(' • ');
     return languages.isNotEmpty ? languages : '';
@@ -204,18 +198,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   String _getFlagForLanguage(String code) {
     switch (code) {
-      case 'en': // Dodano obsługę flagi UK
-        return '🇬🇧';
-      case 'pl':
-        return '🇵🇱';
-      case 'de':
-        return '🇩🇪';
-      case 'es':
-        return '🇪🇸';
-      case 'fr':
-        return '🇫🇷';
-      default:
-        return '🌍';
+      case 'en': return '🇬🇧';
+      case 'pl': return '🇵🇱';
+      case 'de': return '🇩🇪';
+      case 'es': return '🇪🇸';
+      case 'fr': return '🇫🇷';
+      default: return '🌍';
     }
   }
 
@@ -229,7 +217,6 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       final category = categories.removeAt(oldIndex);
       categories.insert(newIndex, category);
 
-      // Update order values
       for (int i = 0; i < categories.length; i++) {
         final updatedCategory = categories[i].copyWith(order: i);
         menuProvider.updateCategory(updatedCategory);
@@ -260,11 +247,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              category.isActive
-                  ? 'Kategoria dezaktywowana' // PL
-                  : 'Kategoria aktywowana', // PL
-            ),
+            content: Text(category.isActive ? 'Kategoria dezaktywowana' : 'Kategoria aktywowana'),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -272,10 +255,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd: $e'), // PL
-            backgroundColor: AppTheme.errorColor,
-          ),
+          SnackBar(content: Text('Błąd: $e'), backgroundColor: AppTheme.errorColor),
         );
       }
     }
@@ -288,12 +268,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Potwierdź usunięcie'), // PL
+        title: const Text('Potwierdź usunięcie'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Usunąć kategorię: ${category.name['pl'] ?? category.name['en']}?'), // PL
+            Text('Usunąć kategorię: ${category.name['pl'] ?? category.name['en']}?'),
             if (itemCount > 0) ...[
               const SizedBox(height: AppTheme.spacingM),
               Container(
@@ -308,7 +288,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     const SizedBox(width: AppTheme.spacingM),
                     Expanded(
                       child: Text(
-                        'Ta kategoria zawiera $itemCount pozycji!', // PL
+                        'Ta kategoria zawiera $itemCount pozycji!',
                         style: const TextStyle(color: AppTheme.warningColor),
                       ),
                     ),
@@ -321,7 +301,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Anuluj'), // PL
+            child: const Text('Anuluj'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -330,25 +310,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 await menuProvider.deleteCategory(category.id);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Kategoria usunięta pomyślnie'), // PL
-                      backgroundColor: AppTheme.successColor,
-                    ),
+                    const SnackBar(content: Text('Kategoria usunięta pomyślnie'), backgroundColor: AppTheme.successColor),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Błąd: $e'), // PL
-                      backgroundColor: AppTheme.errorColor,
-                    ),
+                    SnackBar(content: Text('Błąd: $e'), backgroundColor: AppTheme.errorColor),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
-            child: const Text('Usuń'), // PL
+            child: const Text('Usuń'),
           ),
         ],
       ),
@@ -376,11 +350,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        category == null
-                            ? 'Kategoria utworzona' // PL
-                            : 'Kategoria zaktualizowana', // PL
-                      ),
+                      content: Text(category == null ? 'Kategoria utworzona' : 'Kategoria zaktualizowana'),
                       backgroundColor: AppTheme.successColor,
                     ),
                   );
@@ -388,10 +358,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Błąd: $e'), // PL
-                      backgroundColor: AppTheme.errorColor,
-                    ),
+                    SnackBar(content: Text('Błąd: $e'), backgroundColor: AppTheme.errorColor),
                   );
                 }
               }

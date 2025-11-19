@@ -54,15 +54,21 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Initialize real-time streams
+  // Initialize real-time streams
   void _initializeStreams() {
+    print('📡 [MenuProvider] Inicjalizacja strumieni danych...');
+
     // Categories stream
     _firebaseService.getCategoriesStream().listen(
           (categories) {
+        print('✅ [MenuProvider] Pobrano ${categories.length} kategorii');
         _categories = categories;
         _categoriesError = null;
         notifyListeners();
       },
       onError: (error) {
+        print('❌ [MenuProvider] Błąd pobierania kategorii: $error');
+        // Jeśli błąd dotyczy indeksu, link pojawi się tutaj w konsoli
         _categoriesError = error.toString();
         notifyListeners();
       },
@@ -71,11 +77,13 @@ class MenuProvider with ChangeNotifier {
     // Menu items stream
     _firebaseService.getMenuItemsStream().listen(
           (items) {
+        print('✅ [MenuProvider] Pobrano ${items.length} pozycji menu');
         _menuItems = items;
         _itemsError = null;
         notifyListeners();
       },
       onError: (error) {
+        print('❌ [MenuProvider] Błąd pobierania menu: $error');
         _itemsError = error.toString();
         notifyListeners();
       },

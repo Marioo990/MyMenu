@@ -108,6 +108,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                         setState(() {
                           _filter = filter;
+                          _showFilters = false;
                         });
                       },
                       sortOption: _sortOption,

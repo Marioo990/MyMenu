@@ -267,15 +267,16 @@ class MenuItemFilter {
     String? categoryId,
     String? dayPeriod,
     // Flagi wymuszające reset (ustawienie null)
-    bool forceResetPrice = false,
+    bool forceResetMinPrice = false, // Nowe
+    bool forceResetMaxPrice = false,
     bool forceResetCalories = false,
     bool forceResetSpiciness = false,
   }) {
     return MenuItemFilter(
       tags: tags ?? this.tags,
       allergens: allergens ?? this.allergens,
-      minPrice: forceResetPrice ? null : (minPrice ?? this.minPrice),
-      maxPrice: forceResetPrice ? null : (maxPrice ?? this.maxPrice),
+      minPrice: forceResetMinPrice ? null : (minPrice ?? this.minPrice),
+      maxPrice: forceResetMaxPrice ? null : (maxPrice ?? this.maxPrice),
       maxCalories: forceResetCalories ? null : (maxCalories ?? this.maxCalories),
       maxSpiciness: forceResetSpiciness ? null : (maxSpiciness ?? this.maxSpiciness),
       searchQuery: searchQuery ?? this.searchQuery,

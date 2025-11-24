@@ -23,6 +23,9 @@ class FilterChips extends StatefulWidget {
 }
 
 class _FilterChipsState extends State<FilterChips> {
+  // Stała definiująca maksymalną cenę w suwaku
+  static const double _maxPriceRange = 150.0;
+
   late Set<String> _selectedTags;
   late RangeValues _priceRange;
   int? _maxCalories;
@@ -38,7 +41,7 @@ class _FilterChipsState extends State<FilterChips> {
     _selectedTags = Set<String>.from(widget.filter.tags);
     _priceRange = RangeValues(
       widget.filter.minPrice ?? 0,
-      widget.filter.maxPrice ?? 100,
+      widget.filter.maxPrice ?? _maxPriceRange,
     );
     _maxCalories = widget.filter.maxCalories;
     _maxSpiciness = widget.filter.maxSpiciness;
@@ -48,10 +51,7 @@ class _FilterChipsState extends State<FilterChips> {
   void didUpdateWidget(FilterChips oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // POPRAWKA: Inteligentne sprawdzanie zmian.
-    // Resetujemy formularz tylko wtedy, gdy filtry zmieniły się "z zewnątrz" (np. przycisk Wyczyść),
-    // a nie przy każdym odświeżeniu ekranu.
-
+    // Inteligentne sprawdzanie zmian zewnętrznych
     bool tagsChanged = widget.filter.tags.length != oldWidget.filter.tags.length ||
         !widget.filter.tags.every((t) => oldWidget.filter.tags.contains(t));
 
@@ -70,14 +70,21 @@ class _FilterChipsState extends State<FilterChips> {
   }
 
   void _applyFilters() {
-    print('🚀 [FilterChips] Zastosuj: Tagi=$_selectedTags | Ostrość=$_maxSpiciness | Kalorie=$_maxCalories');
+    // Ustalanie wartości min/max. Jeśli suwak jest na skraju, wartość to null.
+    final min = _priceRange.start > 0 ? _priceRange.start : null;
+    final max = _priceRange.end < _maxPriceRange ? _priceRange.end : null;
+
+    print('🚀 [FilterChips] Zastosuj: Cena=$min-$max | Tagi=$_selectedTags');
 
     final newFilter = widget.filter.copyWith(
       tags: _selectedTags.toList(),
-      // Logika resetowania - jeśli wartość jest null, wymuszamy reset
-      minPrice: _priceRange.start > 0 ? _priceRange.start : null,
-      maxPrice: _priceRange.end < 100 ? _priceRange.end : null,
-      forceResetPrice: _priceRange.start == 0 && _priceRange.end == 100,
+
+      // Przekazywanie wartości
+      minPrice: min,
+      maxPrice: max,
+      // Wymuszenie resetu, jeśli wartość jest null (naprawa buga z "zacinaniem się" wartości)
+      forceResetMinPrice: min == null,
+      forceResetMaxPrice: max == null,
 
       maxCalories: _maxCalories,
       forceResetCalories: _maxCalories == null,
@@ -85,14 +92,13 @@ class _FilterChipsState extends State<FilterChips> {
       maxSpiciness: _maxSpiciness,
       forceResetSpiciness: _maxSpiciness == null,
     );
-
     widget.onFilterChanged(newFilter);
   }
 
   void _clearFilters() {
     setState(() {
       _selectedTags.clear();
-      _priceRange = const RangeValues(0, 100);
+      _priceRange = const RangeValues(0, _maxPriceRange);
       _maxCalories = null;
       _maxSpiciness = null;
     });
@@ -261,7 +267,6 @@ class _FilterChipsState extends State<FilterChips> {
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
-        print('👉 Chip clicked: $tag, new state: $selected'); // LOGOWANIE KLIKNIĘCIA
         setState(() {
           if (selected) {
             _selectedTags.add(tag);
@@ -291,8 +296,8 @@ class _FilterChipsState extends State<FilterChips> {
               child: RangeSlider(
                 values: _priceRange,
                 min: 0,
-                max: 100,
-                divisions: 20,
+                max: _maxPriceRange,
+                divisions: 30, // 150 / 5 = 30 kroków (co 5zł)
                 labels: RangeLabels(
                   '${_priceRange.start.toStringAsFixed(0)} zł',
                   '${_priceRange.end.toStringAsFixed(0)} zł',

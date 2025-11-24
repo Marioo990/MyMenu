@@ -31,6 +31,10 @@ class _FilterChipsState extends State<FilterChips> {
   @override
   void initState() {
     super.initState();
+    _initializeState();
+  }
+
+  void _initializeState() {
     _selectedTags = Set<String>.from(widget.filter.tags);
     _priceRange = RangeValues(
       widget.filter.minPrice ?? 0,
@@ -40,15 +44,59 @@ class _FilterChipsState extends State<FilterChips> {
     _maxSpiciness = widget.filter.maxSpiciness;
   }
 
+  @override
+  void didUpdateWidget(FilterChips oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // POPRAWKA: Inteligentne sprawdzanie zmian.
+    // Resetujemy formularz tylko wtedy, gdy filtry zmieniły się "z zewnątrz" (np. przycisk Wyczyść),
+    // a nie przy każdym odświeżeniu ekranu.
+
+    bool tagsChanged = widget.filter.tags.length != oldWidget.filter.tags.length ||
+        !widget.filter.tags.every((t) => oldWidget.filter.tags.contains(t));
+
+    bool priceChanged = widget.filter.minPrice != oldWidget.filter.minPrice ||
+        widget.filter.maxPrice != oldWidget.filter.maxPrice;
+
+    bool otherChanged = widget.filter.maxCalories != oldWidget.filter.maxCalories ||
+        widget.filter.maxSpiciness != oldWidget.filter.maxSpiciness;
+
+    if (tagsChanged || priceChanged || otherChanged) {
+      print('♻️ [FilterChips] Zewnętrzna zmiana filtrów - aktualizuję widok');
+      setState(() {
+        _initializeState();
+      });
+    }
+  }
+
   void _applyFilters() {
+    print('🚀 [FilterChips] Zastosuj: Tagi=$_selectedTags | Ostrość=$_maxSpiciness | Kalorie=$_maxCalories');
+
     final newFilter = widget.filter.copyWith(
       tags: _selectedTags.toList(),
+      // Logika resetowania - jeśli wartość jest null, wymuszamy reset
       minPrice: _priceRange.start > 0 ? _priceRange.start : null,
       maxPrice: _priceRange.end < 100 ? _priceRange.end : null,
+      forceResetPrice: _priceRange.start == 0 && _priceRange.end == 100,
+
       maxCalories: _maxCalories,
+      forceResetCalories: _maxCalories == null,
+
       maxSpiciness: _maxSpiciness,
+      forceResetSpiciness: _maxSpiciness == null,
     );
+
     widget.onFilterChanged(newFilter);
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedTags.clear();
+      _priceRange = const RangeValues(0, 100);
+      _maxCalories = null;
+      _maxSpiciness = null;
+    });
+    _applyFilters();
   }
 
   @override
@@ -213,6 +261,7 @@ class _FilterChipsState extends State<FilterChips> {
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
+        print('👉 Chip clicked: $tag, new state: $selected'); // LOGOWANIE KLIKNIĘCIA
         setState(() {
           if (selected) {
             _selectedTags.add(tag);
@@ -336,15 +385,5 @@ class _FilterChipsState extends State<FilterChips> {
       },
       selectedColor: AppTheme.warningColor.withOpacity(0.2),
     );
-  }
-
-  void _clearFilters() {
-    setState(() {
-      _selectedTags.clear();
-      _priceRange = const RangeValues(0, 100);
-      _maxCalories = null;
-      _maxSpiciness = null;
-    });
-    _applyFilters();
   }
 }

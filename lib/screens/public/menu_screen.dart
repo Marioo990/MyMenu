@@ -99,6 +99,13 @@ class _MenuScreenState extends State<MenuScreen> {
                     child: FilterChips(
                       filter: _filter,
                       onFilterChanged: (filter) {
+                        // PEŁNA DIAGNOSTYKA
+                        print('🔍 [MenuScreen] Otrzymano filtr: '
+                            'Tagi=${filter.tags}, '
+                            'Ostrość=${filter.maxSpiciness}, ' // Teraz to zobaczysz w logach!
+                            'Kalorie=${filter.maxCalories}, '
+                            'Cena=${filter.minPrice}-${filter.maxPrice}');
+
                         setState(() {
                           _filter = filter;
                         });
@@ -111,7 +118,6 @@ class _MenuScreenState extends State<MenuScreen> {
                       },
                     ),
                   ),
-
                 // Menu Items
                 if (menuProvider.isLoadingItems)
                   const SliverFillRemaining(

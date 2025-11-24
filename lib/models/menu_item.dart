@@ -82,7 +82,7 @@ class MenuItem {
     };
   }
 
-  // Copy with method
+  // Copy with method for MenuItem
   MenuItem copyWith({
     String? id,
     Map<String, String>? name,
@@ -131,7 +131,7 @@ class MenuItem {
   }
 
   bool hasTag(String tag) {
-    return tags.contains(tag);
+    return tags.any((t) => t.toLowerCase().trim() == tag.toLowerCase().trim());
   }
 
   bool isVegan() => hasTag('vegan');
@@ -205,8 +205,8 @@ class MenuItemFilter {
   });
 
   bool matches(MenuItem item, String locale) {
-    // Check tags
-    if (tags.isNotEmpty && !tags.any((tag) => item.hasTag(tag))) {
+    // Check tags (every instead of any for strict matching)
+    if (tags.isNotEmpty && !tags.every((tag) => item.hasTag(tag))) {
       return false;
     }
 
@@ -224,8 +224,10 @@ class MenuItemFilter {
       return false;
     }
 
-    // Check spiciness
-    if (maxSpiciness != null && item.spiciness > maxSpiciness!) {
+    // POPRAWKA TUTAJ: Zmiana logiki na dokładne dopasowanie (Exact Match)
+    // Wcześniej było '>' (maksymalna ostrość), teraz jest '!=' (różna ostrość),
+    // co oznacza: "jeśli ostrość dania jest INNA niż wybrana, ukryj je".
+    if (maxSpiciness != null && item.spiciness != maxSpiciness!) {
       return false;
     }
 
@@ -253,6 +255,7 @@ class MenuItemFilter {
     return true;
   }
 
+  // Updated copyWith for MenuItemFilter with force reset flags
   MenuItemFilter copyWith({
     List<String>? tags,
     List<String>? allergens,
@@ -263,14 +266,18 @@ class MenuItemFilter {
     String? searchQuery,
     String? categoryId,
     String? dayPeriod,
+    // Flagi wymuszające reset (ustawienie null)
+    bool forceResetPrice = false,
+    bool forceResetCalories = false,
+    bool forceResetSpiciness = false,
   }) {
     return MenuItemFilter(
       tags: tags ?? this.tags,
       allergens: allergens ?? this.allergens,
-      minPrice: minPrice ?? this.minPrice,
-      maxPrice: maxPrice ?? this.maxPrice,
-      maxCalories: maxCalories ?? this.maxCalories,
-      maxSpiciness: maxSpiciness ?? this.maxSpiciness,
+      minPrice: forceResetPrice ? null : (minPrice ?? this.minPrice),
+      maxPrice: forceResetPrice ? null : (maxPrice ?? this.maxPrice),
+      maxCalories: forceResetCalories ? null : (maxCalories ?? this.maxCalories),
+      maxSpiciness: forceResetSpiciness ? null : (maxSpiciness ?? this.maxSpiciness),
       searchQuery: searchQuery ?? this.searchQuery,
       categoryId: categoryId ?? this.categoryId,
       dayPeriod: dayPeriod ?? this.dayPeriod,

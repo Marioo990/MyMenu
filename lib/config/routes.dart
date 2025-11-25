@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../screens/public/menu_screen.dart';
-import '../screens/public/item_detail_screen.dart';
-import '../screens/public/info_screen.dart';
+// Zaktualizowane importy do folderu preview
+import '../screens/admin/preview/menu_preview_screen.dart';
+import '../screens/admin/preview/item_detail_preview_screen.dart';
+import '../screens/admin/preview/info_preview_screen.dart';
+
 import '../screens/admin/admin_login_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/admin/manage_items_screen.dart';
@@ -10,7 +12,7 @@ import '../screens/admin/manage_notifications_screen.dart';
 import '../screens/admin/settings_screen.dart';
 
 class AppRoutes {
-  // Public routes
+  // Public routes (teraz preview)
   static const String menu = '/';
   static const String itemDetail = '/item';
   static const String info = '/info';
@@ -25,7 +27,6 @@ class AppRoutes {
   static const String adminSettings = '/admin/settings';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    // Extract arguments
     final args = settings.arguments as Map<String, dynamic>?;
 
     switch (settings.name) {
@@ -103,10 +104,6 @@ class AppRoutes {
       }) {
     return MaterialPageRoute(
       builder: (context) {
-        // Remove AuthGuard check - it may cause null issues
-        // if (requiresAuth) {
-        //   return AuthGuard(child: page);
-        // }
         return page;
       },
       settings: settings,
@@ -117,119 +114,26 @@ class AppRoutes {
     return MaterialPageRoute(
       builder: (_) {
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Error'),
-          ),
-          body: const Center(
-            child: Text('Page not found'),
-          ),
+          appBar: AppBar(title: const Text('Error')),
+          body: const Center(child: Text('Page not found')),
         );
       },
     );
   }
 
-  // Navigation helpers
-  static Future<T?> navigateTo<T>(
-      BuildContext context,
-      String routeName, {
-        Map<String, dynamic>? arguments,
-      }) {
-    return Navigator.pushNamed<T>(
-      context,
-      routeName,
-      arguments: arguments,
-    );
+  static Future<T?> navigateTo<T>(BuildContext context, String routeName, {Map<String, dynamic>? arguments}) {
+    return Navigator.pushNamed<T>(context, routeName, arguments: arguments);
   }
 
-  static Future<T?> navigateAndReplace<T>(
-      BuildContext context,
-      String routeName, {
-        Map<String, dynamic>? arguments,
-      }) {
-    return Navigator.pushReplacementNamed<T, T>(
-      context,
-      routeName,
-      arguments: arguments,
-    );
+  static Future<T?> navigateAndReplace<T>(BuildContext context, String routeName, {Map<String, dynamic>? arguments}) {
+    return Navigator.pushReplacementNamed<T, T>(context, routeName, arguments: arguments);
   }
 
-  static Future<T?> navigateAndRemoveUntil<T>(
-      BuildContext context,
-      String routeName, {
-        Map<String, dynamic>? arguments,
-        bool Function(Route<dynamic>)? predicate,
-      }) {
-    return Navigator.pushNamedAndRemoveUntil<T>(
-      context,
-      routeName,
-      predicate ?? (route) => false,
-      arguments: arguments,
-    );
+  static Future<T?> navigateAndRemoveUntil<T>(BuildContext context, String routeName, {Map<String, dynamic>? arguments, bool Function(Route<dynamic>)? predicate}) {
+    return Navigator.pushNamedAndRemoveUntil<T>(context, routeName, predicate ?? (route) => false, arguments: arguments);
   }
 
   static void goBack<T>(BuildContext context, [T? result]) {
     Navigator.pop(context, result);
-  }
-
-  static bool canGoBack(BuildContext context) {
-    return Navigator.canPop(context);
-  }
-}
-// Auth Guard Widget
-class AuthGuard extends StatefulWidget {
-  final Widget child;
-
-  const AuthGuard({
-    super.key,
-    required this.child,
-  });
-
-  @override
-  State<AuthGuard> createState() => _AuthGuardState();
-}
-//
-class _AuthGuardState extends State<AuthGuard> {
-  @override
-  Widget build(BuildContext context) {
-    // Check if user is authenticated
-    // This would be replaced with actual auth check using Provider
-    return FutureBuilder<bool>(
-      future: _checkAuth(context),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (snapshot.data == true) {
-          return widget.child;
-        }
-
-        // Redirect to login
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            AppRoutes.navigateAndReplace(
-              context,
-              AppRoutes.adminLogin,
-            );
-          }
-        });
-
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool> _checkAuth(BuildContext context) async {
-    // Implementation would check Firebase Auth
-    await Future.delayed(const Duration(milliseconds: 100));
-    return false; // For now, always redirect to login
   }
 }

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// import '../../config/theme.dart';
-// import '../../models/category.dart';
-// import '../../providers/language_provider.dart';
-import 'package:restaurant_menu/config/theme.dart';
-import 'package:restaurant_menu/models/category.dart';
-import 'package:restaurant_menu/providers/language_provider.dart';
+import '../../config/theme.dart';
+import '../../models/category.dart';
+import '../../providers/menu_provider.dart';
+import '../../providers/language_provider.dart';
+
 class CategoryForm extends StatefulWidget {
   final Category? category;
   final Function(Category) onSave;
@@ -29,7 +28,7 @@ class _CategoryFormState extends State<CategoryForm> {
   late int _order;
   late bool _isActive;
 
-  // Dostępne ikony dla kategorii
+  // Pełna lista ikon
   final List<String> _availableIcons = [
     '🍽️', '🥗', '🍲', '🍕', '🍝', '🍔', '🥪', '🌮', '🥘', '🍜',
     '🥩', '🍗', '🐟', '🦞', '🍳', '☕', '🍷', '🍺', '🥤', '🍹',
@@ -65,7 +64,7 @@ class _CategoryFormState extends State<CategoryForm> {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    // final languageProvider = Provider.of<LanguageProvider>(context); // Nieużywane bezpośrednio w UI formularza
     final isEditing = widget.category != null;
 
     return Scaffold(
@@ -98,7 +97,7 @@ class _CategoryFormState extends State<CategoryForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sekcja ikon
+              // 1. Sekcja IKON
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -187,7 +186,7 @@ class _CategoryFormState extends State<CategoryForm> {
 
               const SizedBox(height: AppTheme.spacingL),
 
-              // Sekcja nazw
+              // 2. Sekcja NAZW
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -206,32 +205,30 @@ class _CategoryFormState extends State<CategoryForm> {
                       ),
                       const SizedBox(height: AppTheme.spacingL),
 
-                      // Polski
-                      TextFormField(
-                        controller: _nameControllers['pl'],
-                        decoration: const InputDecoration(
-                          labelText: 'Nazwa (Polski)',
-                          prefixIcon: Icon(Icons.language),
-                        ),
-                      ),
+                      // Generowanie pól dla każdego języka
+                      ..._nameControllers.entries.map((entry) {
+                        final lang = entry.key;
+                        final controller = entry.value;
+                        final label = lang == 'pl' ? 'Nazwa (Polski)' : 'Nazwa (Angielski)';
 
-                      const SizedBox(height: AppTheme.spacingM),
-
-                      // Angielski (Wymagany jako fallback)
-                      TextFormField(
-                        controller: _nameControllers['en'],
-                        decoration: const InputDecoration(
-                          labelText: 'Nazwa (Angielski) *',
-                          prefixIcon: Icon(Icons.language),
-                          helperText: 'Wymagane jako nazwa domyślna',
-                        ),
-                        validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Nazwa angielska jest wymagana (technicznie)';
-                          }
-                          return null;
-                        },
-                      ),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppTheme.spacingM),
+                          child: TextFormField(
+                            controller: controller,
+                            decoration: InputDecoration(
+                              labelText: label,
+                              prefixIcon: const Icon(Icons.language),
+                              helperText: lang == 'en' ? 'Wymagane jako nazwa domyślna' : null,
+                            ),
+                            validator: (value) {
+                              if (lang == 'en' && (value?.isEmpty ?? true)) {
+                                return 'Nazwa angielska jest wymagana (technicznie)';
+                              }
+                              return null;
+                            },
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -239,7 +236,7 @@ class _CategoryFormState extends State<CategoryForm> {
 
               const SizedBox(height: AppTheme.spacingL),
 
-              // Sekcja ustawień
+              // 3. Sekcja USTAWIEŃ
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -308,7 +305,22 @@ class _CategoryFormState extends State<CategoryForm> {
   void _save() {
     if (!_formKey.currentState!.validate()) return;
 
-    // Budowanie mapy nazw
+    // 1. Pobieramy restaurantId z MenuProvidera (który ma je ustawione po zalogowaniu)
+    final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+    final restaurantId = menuProvider.restaurantId;
+
+    // Walidacja krytyczna dla SaaS
+    if (restaurantId == null || restaurantId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('BŁĄD KRYTYCZNY: Brak identyfikatora restauracji. Zaloguj się ponownie.'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    // 2. Budowanie mapy nazw
     final nameMap = <String, String>{};
     _nameControllers.forEach((lang, controller) {
       if (controller.text.isNotEmpty) {
@@ -316,7 +328,7 @@ class _CategoryFormState extends State<CategoryForm> {
       }
     });
 
-    // Zabezpieczenie: jeśli nie wpisano polskiego, użyj angielskiego i vice versa
+    // Zabezpieczenie: fallbacki językowe
     if (!nameMap.containsKey('en') && nameMap.containsKey('pl')) {
       nameMap['en'] = nameMap['pl']!;
     }
@@ -324,8 +336,10 @@ class _CategoryFormState extends State<CategoryForm> {
       nameMap['pl'] = nameMap['en']!;
     }
 
+    // 3. Tworzenie obiektu z restaurantId
     final category = Category(
       id: widget.category?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      restaurantId: restaurantId, // <-- To jest kluczowe
       name: nameMap,
       icon: _selectedIcon,
       order: _order,

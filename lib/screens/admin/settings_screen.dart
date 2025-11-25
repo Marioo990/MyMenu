@@ -100,7 +100,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildGeneralSettings(SettingsProvider settingsProvider, LanguageProvider languageProvider) {
+  Widget _buildGeneralSettings(SettingsProvider settingsProvider,
+      LanguageProvider languageProvider) {
     return SingleChildScrollView(
       padding: AppTheme.responsivePadding(context),
       child: Column(
@@ -115,11 +116,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.restaurant, color: AppTheme.primaryColor),
+                      const Icon(
+                          Icons.restaurant, color: AppTheme.primaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Nazwa Restauracji', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
@@ -163,11 +168,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.language, color: AppTheme.secondaryColor),
+                      const Icon(
+                          Icons.language, color: AppTheme.secondaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Lokalizacja', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
@@ -207,9 +216,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: locale.languageCode,
                         child: Row(
                           children: [
-                            Text(languageProvider.getLanguageFlag(locale.languageCode)),
+                            Text(languageProvider.getLanguageFlag(
+                                locale.languageCode)),
                             const SizedBox(width: AppTheme.spacingM),
-                            Text(languageProvider.getLanguageName(locale.languageCode)),
+                            Text(languageProvider.getLanguageName(
+                                locale.languageCode)),
                           ],
                         ),
                       );
@@ -234,19 +245,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.featured_play_list, color: AppTheme.warningColor),
+                      const Icon(Icons.featured_play_list,
+                          color: AppTheme.warningColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Funkcje', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
                   const SizedBox(height: AppTheme.spacingL),
 
                   SwitchListTile(
-                    title: const Text('Pory dnia'), // PL
-                    subtitle: const Text('Włącz pory śniadaniowe, obiadowe, kolacyjne'), // PL
+                    title: const Text('Pory dnia'),
+                    // PL
+                    subtitle: const Text(
+                        'Włącz pory śniadaniowe, obiadowe, kolacyjne'),
+                    // PL
                     secondary: const Icon(Icons.schedule),
                     value: _dayPeriodsEnabled,
                     onChanged: (value) {
@@ -264,7 +282,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildContactSettings(SettingsProvider settingsProvider, LanguageProvider languageProvider) {
+  Widget _buildContactSettings(SettingsProvider settingsProvider,
+      LanguageProvider languageProvider) {
     return SingleChildScrollView(
       padding: AppTheme.responsivePadding(context),
       child: Column(
@@ -279,11 +298,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.contact_phone, color: AppTheme.primaryColor),
+                      const Icon(
+                          Icons.contact_phone, color: AppTheme.primaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Dane Kontaktowe', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
@@ -322,7 +345,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value != null && value.isNotEmpty && !value.contains('@')) {
+                      if (value != null && value.isNotEmpty &&
+                          !value.contains('@')) {
                         return 'Nieprawidłowy adres email'; // PL
                       }
                       return null;
@@ -344,11 +368,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.schedule, color: AppTheme.secondaryColor),
+                      const Icon(
+                          Icons.schedule, color: AppTheme.secondaryColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Godziny otwarcia', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
@@ -364,7 +392,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDisplaySettings(SettingsProvider settingsProvider, LanguageProvider languageProvider) {
+  Widget _buildDisplaySettings(SettingsProvider settingsProvider,
+      LanguageProvider languageProvider) {
     return SingleChildScrollView(
       padding: AppTheme.responsivePadding(context),
       child: Column(
@@ -383,15 +412,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Ustawienia Obrazów', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
                   const SizedBox(height: AppTheme.spacingL),
 
                   SwitchListTile(
-                    title: const Text('Pokaż Obrazy'), // PL
-                    subtitle: const Text('Wyświetlaj zdjęcia dań w widoku szczegółów'), // PL
+                    title: const Text('Pokaż Obrazy'),
+                    // PL
+                    subtitle: const Text(
+                        'Wyświetlaj zdjęcia dań w widoku szczegółów'),
+                    // PL
                     secondary: const Icon(Icons.photo),
                     value: _showImages,
                     onChanged: (value) {
@@ -402,8 +437,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   SwitchListTile(
-                    title: const Text('Pokaż Miniatury'), // PL
-                    subtitle: const Text('Wyświetlaj miniatury na liście menu'), // PL
+                    title: const Text('Pokaż Miniatury'),
+                    // PL
+                    subtitle: const Text('Wyświetlaj miniatury na liście menu'),
+                    // PL
                     secondary: const Icon(Icons.photo_size_select_actual),
                     value: _showThumbnails,
                     onChanged: (value) {
@@ -428,11 +465,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.import_export, color: AppTheme.warningColor),
+                      const Icon(
+                          Icons.import_export, color: AppTheme.warningColor),
                       const SizedBox(width: AppTheme.spacingM),
                       Text(
                         'Zarządzanie Danymi', // PL
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                     ],
                   ),
@@ -504,7 +545,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _saveSettings() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final settingsProvider = Provider.of<SettingsProvider>(
+        context, listen: false);
 
     try {
       // Save restaurant name
@@ -550,36 +592,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _exportData() async {
     try {
-      // Pobierz FirebaseService przez Provider
+      final settingsProvider = context.read<SettingsProvider>();
+      final restaurantId = settingsProvider
+          .restaurantId; // Musimy dodać getter w SettingsProvider (zrobione w kroku 1)
+
+      if (restaurantId == null) {
+        throw Exception("Brak ID restauracji");
+      }
+
       final firebaseService = context.read<FirebaseService>();
-      final data = await firebaseService.exportData();
+      // POPRAWKA: Przekazanie restaurantId
+      final data = await firebaseService.exportData(restaurantId);
       final jsonStr = jsonEncode(data);
 
-      // Dla Web - pobierz plik
+      // ... (reszta kodu bez zmian: blob, download) ...
+
       final bytes = utf8.encode(jsonStr);
       final blob = html.Blob([bytes]);
       final url = html.Url.createObjectUrlFromBlob(blob);
       final anchor = html.AnchorElement()
         ..href = url
-        ..download = 'menu_export_${DateTime.now().millisecondsSinceEpoch}.json';
+        ..download = 'menu_export_${DateTime
+            .now()
+            .millisecondsSinceEpoch}.json';
       anchor.click();
       html.Url.revokeObjectUrl(url);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dane wyeksportowane pomyślnie'), // PL
-            backgroundColor: AppTheme.successColor,
-          ),
+          const SnackBar(content: Text('Dane wyeksportowane pomyślnie'),
+              backgroundColor: AppTheme.successColor),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Eksport nieudany: $e'), // PL
-            backgroundColor: AppTheme.errorColor,
-          ),
+          SnackBar(content: Text('Eksport nieudany: $e'),
+              backgroundColor: AppTheme.errorColor),
         );
       }
     }
@@ -587,7 +636,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _importData() async {
     try {
-      // Utwórz input element
+      final settingsProvider = context.read<SettingsProvider>();
+      final restaurantId = settingsProvider.restaurantId;
+
+      if (restaurantId == null) throw Exception("Brak ID restauracji");
+
       final uploadInput = html.FileUploadInputElement()
         ..accept = 'application/json,.json';
       uploadInput.click();
@@ -603,23 +656,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
 
       final firebaseService = context.read<FirebaseService>();
-      await firebaseService.importData(data);
+      // POPRAWKA: Przekazanie restaurantId
+      await firebaseService.importData(restaurantId, data);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dane zaimportowane pomyślnie'), // PL
-            backgroundColor: AppTheme.successColor,
-          ),
+          const SnackBar(content: Text('Dane zaimportowane pomyślnie'),
+              backgroundColor: AppTheme.successColor),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Import nieudany: $e'), // PL
-            backgroundColor: AppTheme.errorColor,
-          ),
+          SnackBar(content: Text('Import nieudany: $e'),
+              backgroundColor: AppTheme.errorColor),
         );
       }
     }

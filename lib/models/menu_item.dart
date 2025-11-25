@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MenuItem {
   final String id;
+  final String restaurantId; // Pole wymagane dla SaaS
   final Map<String, String> name;
   final Map<String, String> description;
   final double price;
@@ -10,7 +11,11 @@ class MenuItem {
   final int? calories;
   final List<String> allergens;
   final int spiciness; // 0-3
-  final List<String> dayPeriods;
+
+  // Nowa logika dostępności (Smart Menu)
+  final List<String> availabilityIds; // Zastępuje dayPeriods
+  final String? specialEventId;       // Opcjonalne powiązanie z eventem
+
   final List<String> tags;
   final Map<String, dynamic>? macros;
   final bool isActive;
@@ -20,6 +25,7 @@ class MenuItem {
 
   MenuItem({
     required this.id,
+    required this.restaurantId,
     required this.name,
     required this.description,
     required this.price,
@@ -28,7 +34,8 @@ class MenuItem {
     this.calories,
     this.allergens = const [],
     this.spiciness = 0,
-    this.dayPeriods = const [],
+    this.availabilityIds = const [],
+    this.specialEventId,
     this.tags = const [],
     this.macros,
     this.isActive = true,
@@ -43,6 +50,7 @@ class MenuItem {
 
     return MenuItem(
       id: doc.id,
+      restaurantId: data['restaurantId'] ?? '', // Fallback dla starych danych
       name: Map<String, String>.from(data['name'] ?? {}),
       description: Map<String, String>.from(data['description'] ?? {}),
       price: (data['price'] ?? 0).toDouble(),
@@ -51,7 +59,11 @@ class MenuItem {
       calories: data['calories'],
       allergens: List<String>.from(data['allergens'] ?? []),
       spiciness: data['spiciness'] ?? 0,
-      dayPeriods: List<String>.from(data['dayPeriods'] ?? []),
+
+      // Migracja w locie: jeśli nie ma availabilityIds, sprawdź stare dayPeriods
+      availabilityIds: List<String>.from(data['availabilityIds'] ?? data['dayPeriods'] ?? []),
+      specialEventId: data['specialEventId'],
+
       tags: List<String>.from(data['tags'] ?? []),
       macros: data['macros'],
       isActive: data['isActive'] ?? true,
@@ -64,6 +76,7 @@ class MenuItem {
   // Convert to Firestore document
   Map<String, dynamic> toFirestore() {
     return {
+      'restaurantId': restaurantId,
       'name': name,
       'description': description,
       'price': price,
@@ -72,7 +85,8 @@ class MenuItem {
       'calories': calories,
       'allergens': allergens,
       'spiciness': spiciness,
-      'dayPeriods': dayPeriods,
+      'availabilityIds': availabilityIds,
+      'specialEventId': specialEventId,
       'tags': tags,
       'macros': macros,
       'isActive': isActive,
@@ -82,9 +96,10 @@ class MenuItem {
     };
   }
 
-  // Copy with method for MenuItem
+  // Copy with method
   MenuItem copyWith({
     String? id,
+    String? restaurantId,
     Map<String, String>? name,
     Map<String, String>? description,
     double? price,
@@ -93,7 +108,8 @@ class MenuItem {
     int? calories,
     List<String>? allergens,
     int? spiciness,
-    List<String>? dayPeriods,
+    List<String>? availabilityIds,
+    String? specialEventId,
     List<String>? tags,
     Map<String, dynamic>? macros,
     bool? isActive,
@@ -103,6 +119,7 @@ class MenuItem {
   }) {
     return MenuItem(
       id: id ?? this.id,
+      restaurantId: restaurantId ?? this.restaurantId,
       name: name ?? this.name,
       description: description ?? this.description,
       price: price ?? this.price,
@@ -111,7 +128,8 @@ class MenuItem {
       calories: calories ?? this.calories,
       allergens: allergens ?? this.allergens,
       spiciness: spiciness ?? this.spiciness,
-      dayPeriods: dayPeriods ?? this.dayPeriods,
+      availabilityIds: availabilityIds ?? this.availabilityIds,
+      specialEventId: specialEventId ?? this.specialEventId,
       tags: tags ?? this.tags,
       macros: macros ?? this.macros,
       isActive: isActive ?? this.isActive,
@@ -123,12 +141,12 @@ class MenuItem {
 
   // Helper methods
   String getName(String locale) {
-    if (name.isEmpty) return 'Unnamed Item'; // Zabezpieczenie przed pustą mapą
+    if (name.isEmpty) return 'Unnamed Item';
     return name[locale] ?? name['en'] ?? (name.values.isNotEmpty ? name.values.first : '');
   }
 
   String getDescription(String locale) {
-    if (description.isEmpty) return ''; // Zabezpieczenie przed pustą mapą
+    if (description.isEmpty) return '';
     return description[locale] ?? description['en'] ?? (description.values.isNotEmpty ? description.values.first : '');
   }
 
@@ -165,11 +183,12 @@ class MenuItem {
     return icons;
   }
 
-  bool isAvailableNow(String? currentDayPeriod) {
-    if (dayPeriods.isEmpty || currentDayPeriod == null) {
+  // Zaktualizowana logika sprawdzania dostępności
+  bool isAvailableNow(String? currentAvailabilityId) {
+    if (availabilityIds.isEmpty || currentAvailabilityId == null) {
       return true;
     }
-    return dayPeriods.contains(currentDayPeriod);
+    return availabilityIds.contains(currentAvailabilityId);
   }
 }
 
@@ -192,7 +211,7 @@ class MenuItemFilter {
   final int? maxSpiciness;
   final String? searchQuery;
   final String? categoryId;
-  final String? dayPeriod;
+  final String? availabilityId; // Zmieniono z dayPeriod
 
   MenuItemFilter({
     this.tags = const [],
@@ -203,16 +222,16 @@ class MenuItemFilter {
     this.maxSpiciness,
     this.searchQuery,
     this.categoryId,
-    this.dayPeriod,
+    this.availabilityId,
   });
 
   bool matches(MenuItem item, String locale) {
-    // Check tags (every instead of any for strict matching)
+    // Check tags
     if (tags.isNotEmpty && !tags.every((tag) => item.hasTag(tag))) {
       return false;
     }
 
-    // Check allergens (exclude items with these allergens)
+    // Check allergens
     if (allergens.isNotEmpty && allergens.any((allergen) => item.allergens.contains(allergen))) {
       return false;
     }
@@ -226,7 +245,7 @@ class MenuItemFilter {
       return false;
     }
 
-    // POPRAWKA: Zmiana logiki na > (ukryj jeśli ostrzejsze niż limit)
+    // Check spiciness
     if (maxSpiciness != null && item.spiciness > maxSpiciness!) {
       return false;
     }
@@ -247,15 +266,14 @@ class MenuItemFilter {
       return false;
     }
 
-    // Check day period
-    if (dayPeriod != null && !item.isAvailableNow(dayPeriod)) {
+    // Check availability (day period / event)
+    if (availabilityId != null && !item.isAvailableNow(availabilityId)) {
       return false;
     }
 
     return true;
   }
 
-  // Updated copyWith for MenuItemFilter with force reset flags
   MenuItemFilter copyWith({
     List<String>? tags,
     List<String>? allergens,
@@ -265,9 +283,8 @@ class MenuItemFilter {
     int? maxSpiciness,
     String? searchQuery,
     String? categoryId,
-    String? dayPeriod,
-    // Flagi wymuszające reset (ustawienie null)
-    bool forceResetMinPrice = false, // Nowe
+    String? availabilityId,
+    bool forceResetMinPrice = false,
     bool forceResetMaxPrice = false,
     bool forceResetCalories = false,
     bool forceResetSpiciness = false,
@@ -281,7 +298,7 @@ class MenuItemFilter {
       maxSpiciness: forceResetSpiciness ? null : (maxSpiciness ?? this.maxSpiciness),
       searchQuery: searchQuery ?? this.searchQuery,
       categoryId: categoryId ?? this.categoryId,
-      dayPeriod: dayPeriod ?? this.dayPeriod,
+      availabilityId: availabilityId ?? this.availabilityId,
     );
   }
 }

@@ -1,20 +1,37 @@
 {
   "indexes": [
     {
-      "collectionGroup": "notifications",
+      "collectionGroup": "categories",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "endAt", "order": "ASCENDING" },
-        { "fieldPath": "priority", "order": "DESCENDING" }
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "menuItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dayPeriods",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "startAt", "order": "ASCENDING" },
-        { "fieldPath": "endAt", "order": "ASCENDING" },
-        { "fieldPath": "priority", "order": "DESCENDING" }
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "endAt", "order": "ASCENDING" }
       ]
     }
   ],

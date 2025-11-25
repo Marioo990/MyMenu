@@ -1,35 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Funkcja sprawdzająca czy user jest adminem
+
+    // Funkcja pomocnicza: Czy user jest adminem?
     function isAdmin() {
-          return request.auth != null &&
-            request.auth.token.email_verified == true &&
-            (
-              // Sprawdź czy istnieje dokument w kolekcji admins z ID równym ID użytkownika
-              exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-              // LUB czy istnieje dokument w kolekcji admins z ID równym Emailowi użytkownika
-              exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
-            );
-        }
-
-    // Użytkownicy mogą czytać własne dane
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null &&
-        request.auth.uid == userId &&
-        request.auth.token.email_verified == true;
+      return request.auth != null &&
+        // Sprawdź czy istnieje wpis w kolekcji admins (email lub UID)
+        (exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) ||
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
 
-    // Tylko admini mogą zarządzać listą adminów
-    match /admins/{document} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
+    // --- SAAS RULES ---
 
-    // Menu - wszyscy czytają, tylko admini piszą
+    // 1. Menu Items & Categories
+    // PUBLIC: Dozwolony odczyt dla wszystkich (nawet bez logowania)
+    // ADMIN: Pełny zapis
     match /menuItems/{document} {
-      allow read: if true;
+      allow read: if true; // Publiczne czytanie (aplikacja filtruje po restaurantId)
       allow write: if isAdmin();
     }
 
@@ -38,10 +25,39 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Settings - tylko admini
-    match /settings/{document} {
+    match /dayPeriods/{document} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // 2. Restauracje i Ustawienia
+    // Główny dokument restauracji
+    match /restaurants/{restaurantId} {
+      allow read: if true; // Publiczne (potrzebne do sprawdzenia nazwy/logo przy ładowaniu)
+      allow write: if isAdmin(); // Tylko admin może tworzyć/edytować restaurację
+
+      // Subkolekcja settings
+      match /settings/{document} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    // 3. Dane użytkowników (Prywatne)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 4. Administratorzy (Tylko do odczytu dla adminów, żeby sprawdzić uprawnienia)
+    match /admins/{document} {
+      allow read: if request.auth != null; // Zalogowani mogą sprawdzić czy są adminami
+      allow write: if false; // Admini są dodawani ręcznie w konsoli Firebase (bezpieczeństwo)
+    }
+
+    // 5. Powiadomienia
+    match /notifications/{document} {
+       allow read: if true;
+       allow write: if isAdmin();
     }
   }
 }

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2C3E50;
+            --accent-color: #E74C3C;
+            --bg-color: #F8F9FA;
+            --text-color: #2C3E50;
+            --card-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--card-bg);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; }
+        .subtitle { font-size: 0.9rem; color: #7f8c8d; margin-top: 5px; }
+
+        /* Navigation (Categories) */
+        .nav-scroller {
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 15px;
+            background: var(--bg-color);
+            -webkit-overflow-scrolling: touch;
+            position: sticky;
+            top: 80px;
+            z-index: 90;
+        }
+
+        .nav-chip {
+            display: inline-block;
+            padding: 8px 16px;
+            margin-right: 10px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-color);
+            border: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-chip.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Menu Grid */
+        .container {
+            padding: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .category-title {
+            margin: 30px 0 15px 0;
+            font-size: 1.2rem;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 10px;
+        }
+
+        .menu-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .item-content { flex: 1; padding-right: 10px; }
+
+        .item-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .item-desc {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .item-price {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        .item-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            background-color: #eee;
+            object-fit: cover;
+        }
+
+        /* Utilities */
+        .hidden { display: none; }
+        .loading { text-align: center; padding: 50px; color: #95a5a6; }
+        .tags { margin-top: 5px; }
+        .tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: #ecf0f1; color: #7f8c8d; margin-right: 4px; }
+
+        /* Floating Action Button for Waiter */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<header id="main-header">
+    <h1 id="restaurant-name">Ładowanie...</h1>
+    <div class="subtitle" id="restaurant-info">Witamy!</div>
+</header>
+
+<div class="nav-scroller" id="categories-nav">
+</div>
+
+<div class="container" id="menu-container">
+    <div class="loading">Pobieranie pyszności...</div>
+</div>
+
+<div class="fab" onclick="alert('Wezwanie kelnera - funkcja wkrótce!')">🔔</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // 1. KONFIGURACJA FIREBASE (Skopiuj values z lib/firebase_options.dart)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEOMvl5R652nQEULdzbRhY987g3Ok1IkQ",
+        authDomain: "mymenu-8236d.firebaseapp.com",
+        projectId: "mymenu-8236d",
+        storageBucket: "mymenu-8236d.firebasestorage.app",
+        messagingSenderId: "927400788077",
+        appId: "1:927400788077:web:8b4f7a72357246b5bd7f64"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 2. POBIERANIE ID RESTAURACJI Z URL (?id=XYZ)
+    const urlParams = new URLSearchParams(window.location.search);
+    const restaurantId = urlParams.get('id');
+    const lang = navigator.language.startsWith('pl') ? 'pl' : 'en';
+
+    // 3. GŁÓWNA LOGIKA
+    async function loadMenu() {
+        if (!restaurantId) {
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;"><h3>Błąd: Brak ID restauracji</h3><p>Zeskanuj kod QR ponownie.</p></div>';
+            return;
+        }
+
+        try {
+            // A. Pobierz ustawienia restauracji (Settings)
+            // UWAGA: To wymaga subkolekcji 'settings' wewnątrz 'restaurants/{id}'
+            // W modelu SaaS struktura to: restaurants/{id}/settings/general
+
+            // Fallback name jeśli settings jeszcze nie ma
+            document.getElementById('restaurant-name').textContent = "Restauracja";
+
+            // B. Pobierz Kategorie
+            const catsSnapshot = await db.collection('categories')
+                .where('restaurantId', '==', restaurantId)
+                .where('isActive', '==', true)
+                .orderBy('order')
+                .get();
+
+            // C. Pobierz Wszystkie Dania
+            const itemsSnapshot = await db.collection('menuItems')
+                .where('restaurantId', '==', restaurantId)
+                .where('isActive', '==', true)
+                .orderBy('order')
+                .get();
+
+            const items = itemsSnapshot.docs.map(doc => doc.data());
+
+            renderMenu(catsSnapshot.docs, items);
+
+        } catch (error) {
+            console.error("Error loading menu:", error);
+            document.getElementById('menu-container').innerHTML = `<div class="loading">Wystąpił błąd.<br>${error.message}</div>`;
+        }
+    }
+
+    function renderMenu(categoriesDocs, allItems) {
+        const navContainer = document.getElementById('categories-nav');
+        const menuContainer = document.getElementById('menu-container');
+        menuContainer.innerHTML = ''; // Clear loading
+
+        // 1. Render Categories Navigation
+        categoriesDocs.forEach((doc, index) => {
+            const cat = doc.data();
+            const catId = doc.id;
+            const catName = cat.name[lang] || cat.name['en'];
+            const catIcon = cat.icon || '🍽️';
+
+            // Chip
+            const chip = document.createElement('div');
+            chip.className = `nav-chip ${index === 0 ? 'active' : ''}`;
+            chip.textContent = `${catIcon} ${catName}`;
+            chip.onclick = () => {
+                document.querySelectorAll('.nav-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                document.getElementById(`cat-${catId}`).scrollIntoView({behavior: 'smooth', block: 'start'});
+            };
+            navContainer.appendChild(chip);
+
+            // 2. Render Category Section
+            const section = document.createElement('div');
+            section.id = `cat-${catId}`;
+            section.innerHTML = `<div class="category-title">${catName}</div>`;
+
+            // Filter items for this category
+            const catItems = allItems.filter(i => i.categoryId === catId);
+
+            if (catItems.length === 0) {
+                section.innerHTML += '<p style="color:#ccc;font-size:0.8rem">Brak pozycji w tej kategorii</p>';
+            } else {
+                catItems.forEach(item => {
+                    const itemName = item.name[lang] || item.name['en'];
+                    const itemDesc = item.description ? (item.description[lang] || item.description['en']) : '';
+                    const itemPrice = item.price ? item.price.toFixed(2) : '0.00';
+
+                    // Image logic
+                    let imgHtml = '';
+                    if (item.imageUrl) {
+                        imgHtml = `<img src="${item.imageUrl}" class="item-image" loading="lazy" alt="${itemName}">`;
+                    }
+
+                    // Tags logic
+                    let tagsHtml = '';
+                    if (item.isSpicy) tagsHtml += '<span class="tag">🌶️ Ostre</span>';
+                    if (item.isVegan) tagsHtml += '<span class="tag">🌱 Vegan</span>';
+
+                    const itemHtml = `
+                        <div class="menu-item">
+                            <div class="item-content">
+                                <div class="item-name">${itemName}</div>
+                                <div class="item-desc">${itemDesc}</div>
+                                <div class="item-price">${itemPrice} zł</div>
+                                <div class="tags">${tagsHtml}</div>
+                            </div>
+                            ${imgHtml}
+                        </div>
+                    `;
+                    section.innerHTML += itemHtml;
+                });
+            }
+            menuContainer.appendChild(section);
+        });
+    }
+
+    loadMenu();
+</script>
+</body>
+</html>

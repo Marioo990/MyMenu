@@ -5,6 +5,7 @@ import '../models/category.dart' as app_models;
 import '../models/notification.dart';
 import '../models/day_period.dart';
 import '../services/firebase_service.dart';
+import 'dart:async';
 
 class MenuProvider with ChangeNotifier {
   final FirebaseService _firebaseService;
@@ -14,6 +15,7 @@ class MenuProvider with ChangeNotifier {
   List<MenuItem> _menuItems = [];
   List<RestaurantNotification> _notifications = [];
   List<DayPeriod> _dayPeriods = [];
+  final List<StreamSubscription> _subscriptions = [];
 
   // Loading states
   bool _isLoadingCategories = false;
@@ -54,65 +56,72 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Initialize real-time streams
-  // Initialize real-time streams
   void _initializeStreams() {
     print('📡 [MenuProvider] Inicjalizacja strumieni danych...');
 
     // Categories stream
-    _firebaseService.getCategoriesStream().listen(
-          (categories) {
-        print('✅ [MenuProvider] Pobrano ${categories.length} kategorii');
-        _categories = categories;
-        _categoriesError = null;
-        notifyListeners();
-      },
-      onError: (error) {
-        print('❌ [MenuProvider] Błąd pobierania kategorii: $error');
-        // Jeśli błąd dotyczy indeksu, link pojawi się tutaj w konsoli
-        _categoriesError = error.toString();
-        notifyListeners();
-      },
+    _subscriptions.add(
+      _firebaseService.getCategoriesStream().listen(
+            (categories) {
+          print('✅ [MenuProvider] Pobrano ${categories.length} kategorii');
+          _categories = categories;
+          _categoriesError = null;
+          notifyListeners();
+        },
+        onError: (error) {
+          print('❌ [MenuProvider] Błąd pobierania kategorii: $error');
+          // Jeśli błąd dotyczy indeksu, link pojawi się tutaj w konsoli
+          _categoriesError = error.toString();
+          notifyListeners();
+        },
+      ),
     );
 
     // Menu items stream
-    _firebaseService.getMenuItemsStream().listen(
-          (items) {
-        print('✅ [MenuProvider] Pobrano ${items.length} pozycji menu');
-        _menuItems = items;
-        _itemsError = null;
-        notifyListeners();
-      },
-      onError: (error) {
-        print('❌ [MenuProvider] Błąd pobierania menu: $error');
-        _itemsError = error.toString();
-        notifyListeners();
-      },
+    _subscriptions.add(
+      _firebaseService.getMenuItemsStream().listen(
+            (items) {
+          print('✅ [MenuProvider] Pobrano ${items.length} pozycji menu');
+          _menuItems = items;
+          _itemsError = null;
+          notifyListeners();
+        },
+        onError: (error) {
+          print('❌ [MenuProvider] Błąd pobierania menu: $error');
+          _itemsError = error.toString();
+          notifyListeners();
+        },
+      ),
     );
 
     // Notifications stream
-    _firebaseService.getNotificationsStream().listen(
-          (notifications) {
-        _notifications = notifications;
-        _notificationsError = null;
-        notifyListeners();
-      },
-      onError: (error) {
-        _notificationsError = error.toString();
-        notifyListeners();
-      },
+    _subscriptions.add(
+      _firebaseService.getNotificationsStream().listen(
+            (notifications) {
+          _notifications = notifications;
+          _notificationsError = null;
+          notifyListeners();
+        },
+        onError: (error) {
+          _notificationsError = error.toString();
+          notifyListeners();
+        },
+      ),
     );
 
     // Day periods stream
-    _firebaseService.getDayPeriodsStream().listen(
-          (periods) {
-        _dayPeriods = periods;
-        _dayPeriodsError = null;
-        notifyListeners();
-      },
-      onError: (error) {
-        _dayPeriodsError = error.toString();
-        notifyListeners();
-      },
+    _subscriptions.add(
+      _firebaseService.getDayPeriodsStream().listen(
+            (periods) {
+          _dayPeriods = periods;
+          _dayPeriodsError = null;
+          notifyListeners();
+        },
+        onError: (error) {
+          _dayPeriodsError = error.toString();
+          notifyListeners();
+        },
+      ),
     );
   }
 
@@ -359,7 +368,9 @@ class MenuProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    // Clean up any resources
+    for (var subscription in _subscriptions) {
+      subscription.cancel();
+    }
     super.dispose();
   }
 }

@@ -274,6 +274,13 @@ class LanguageProvider with ChangeNotifier {
       'location': 'Location',
     },
     'pl': {
+      'admin_panel': 'Panel Administratora',
+      'admin_login': 'Logowanie Admina',
+      'dashboard': 'Pulpit',
+      'dashboard_subtitle': 'Zarządzaj menu i ustawieniami',
+      'welcome_admin': 'Witaj Adminie!',
+      'logout': 'Wyloguj',
+      'save_settings': 'Zapisz ustawienia',
       'menu': 'Menu',
       'favorites': 'Ulubione',
       'all': 'Wszystkie',

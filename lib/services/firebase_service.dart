@@ -4,6 +4,7 @@ import '../models/menu_item.dart';
 import '../models/category.dart';
 import '../models/notification.dart';
 import '../models/day_period.dart';
+import 'dart:typed_data';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -294,10 +295,10 @@ class FirebaseService {
   }
 
   // Storage
-  Future<String> uploadImage(String path, List<int> imageBytes) async {
+  Future<String> uploadImage(String path, Uint8List imageBytes) async { // Zmiana typu argumentu
     final ref = _storage.ref(path);
     final uploadTask = await ref.putData(
-      imageBytes as dynamic,
+      imageBytes, // Usunięto 'as dynamic'
       SettableMetadata(contentType: 'image/jpeg'),
     );
 

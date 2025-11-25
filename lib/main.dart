@@ -54,21 +54,6 @@ void main() async {
     );
     print('✅ Firebase initialized successfully');
 
-    // Initialize database with sample data if needed
-    /*try {
-      final initializer = DatabaseInitializer();
-      final isInitialized = await initializer.isDatabaseInitialized();
-      if (!isInitialized) {
-        print('🔧 Initializing database with default data...');
-        await initializer.initializeDatabase();
-        print('✅ Database initialized with sample data');
-      } else {
-        print('✅ Database already has data');
-      }
-    } catch (e) {
-      print('⚠️ Database initialization error: $e - continuing anyway');
-    }
-*/
     // Initialize services
     final firebaseService = FirebaseService();
     final authService = AuthService();
@@ -369,7 +354,7 @@ class _AdminGuardState extends State<AdminGuard> {
 
           // Sprawdź email verification
           if (!user.emailVerified) {
-            Future.microtask(() {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _authService.signOut();
                 Navigator.pushReplacementNamed(context, '/admin/login');
@@ -406,7 +391,7 @@ class _AdminGuardState extends State<AdminGuard> {
               }
 
               // Not an admin - sign out and redirect
-              Future.microtask(() async {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
                 if (mounted) {
                   await _authService.signOut();
                   Navigator.pushReplacementNamed(context, '/admin/login');
@@ -429,7 +414,7 @@ class _AdminGuardState extends State<AdminGuard> {
         }
 
         // Not logged in - redirect to login
-        Future.microtask(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             Navigator.pushReplacementNamed(context, '/admin/login');
           }

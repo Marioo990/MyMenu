@@ -123,11 +123,13 @@ class MenuItem {
 
   // Helper methods
   String getName(String locale) {
-    return name[locale] ?? name['en'] ?? name.values.first;
+    if (name.isEmpty) return 'Unnamed Item'; // Zabezpieczenie przed pustą mapą
+    return name[locale] ?? name['en'] ?? (name.values.isNotEmpty ? name.values.first : '');
   }
 
   String getDescription(String locale) {
-    return description[locale] ?? description['en'] ?? description.values.first;
+    if (description.isEmpty) return ''; // Zabezpieczenie przed pustą mapą
+    return description[locale] ?? description['en'] ?? (description.values.isNotEmpty ? description.values.first : '');
   }
 
   bool hasTag(String tag) {
@@ -224,10 +226,8 @@ class MenuItemFilter {
       return false;
     }
 
-    // POPRAWKA TUTAJ: Zmiana logiki na dokładne dopasowanie (Exact Match)
-    // Wcześniej było '>' (maksymalna ostrość), teraz jest '!=' (różna ostrość),
-    // co oznacza: "jeśli ostrość dania jest INNA niż wybrana, ukryj je".
-    if (maxSpiciness != null && item.spiciness != maxSpiciness!) {
+    // POPRAWKA: Zmiana logiki na > (ukryj jeśli ostrzejsze niż limit)
+    if (maxSpiciness != null && item.spiciness > maxSpiciness!) {
       return false;
     }
 

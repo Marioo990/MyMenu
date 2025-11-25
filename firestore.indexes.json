@@ -1,6 +1,13 @@
 {
-
   "indexes": [
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "endAt", "order": "ASCENDING" },
+        { "fieldPath": "priority", "order": "DESCENDING" }
+      ]
+    },
     {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
@@ -11,6 +18,5 @@
       ]
     }
   ],
-
   "fieldOverrides": []
 }

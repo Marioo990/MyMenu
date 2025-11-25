@@ -4,6 +4,8 @@ import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../models/category.dart';
 import '../../models/menu_item.dart';
+// FIX: Użycie aliasu 'app_models' aby uniknąć konfliktu z DayPeriod z flutter/material
+import '../../models/day_period.dart' as app_models;
 import '../../providers/menu_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/favorites_provider.dart';
@@ -50,6 +52,19 @@ class _MenuScreenState extends State<MenuScreen> {
       }
     } catch (e) {
       print('❌ Error loading data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Wystąpił problem z pobraniem danych. Sprawdź połączenie.'),
+            backgroundColor: AppTheme.errorColor,
+            action: SnackBarAction(
+              label: 'Ponów',
+              textColor: Colors.white,
+              onPressed: _loadData,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -102,7 +117,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         // PEŁNA DIAGNOSTYKA
                         print('🔍 [MenuScreen] Otrzymano filtr: '
                             'Tagi=${filter.tags}, '
-                            'Ostrość=${filter.maxSpiciness}, ' // Teraz to zobaczysz w logach!
+                            'Ostrość=${filter.maxSpiciness}, '
                             'Kalorie=${filter.maxCalories}, '
                             'Cena=${filter.minPrice}-${filter.maxPrice}');
 
@@ -252,7 +267,8 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildDayPeriodIndicator(BuildContext context, dynamic currentDayPeriod, String locale) {
+  // FIX: Zmieniono typ currentDayPeriod na app_models.DayPeriod
+  Widget _buildDayPeriodIndicator(BuildContext context, app_models.DayPeriod currentDayPeriod, String locale) {
     return SliverToBoxAdapter(
       child: Container(
         width: double.infinity,

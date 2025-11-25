@@ -2,14 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-
+import '../config/constants.dart';
 class GoogleAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: kIsWeb
-        ? '927400788077-your-client-id.apps.googleusercontent.com' // Zastąp swoim Client ID jeśli trzeba
-        : null,
+
+    clientId: kIsWeb ? AppConstants.googleClientId : null,
+
     scopes: [
       'email',
       'profile',

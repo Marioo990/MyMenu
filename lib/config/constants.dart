@@ -3,6 +3,7 @@ class AppConstants {
   static const String appName = 'Restaurant Menu';
   static const String appVersion = '1.0.0';
   static const String appBuildNumber = '1';
+  static const String googleClientId = '927400788077-your-client-id.apps.googleusercontent.com'; // Zaktualizuj jeśli masz właściwe ID
 
   // URLs
   static const String websiteUrl = 'https://restaurant.com';

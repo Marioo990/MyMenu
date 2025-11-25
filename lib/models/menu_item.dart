@@ -1,8 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum MenuItemSort {
+  name,
+  priceAsc,
+  priceDesc,
+  calories,
+  newest,
+}
+
 class MenuItem {
   final String id;
-  final String restaurantId; // Pole wymagane dla SaaS
+  final String restaurantId;
   final Map<String, String> name;
   final Map<String, String> description;
   final double price;
@@ -12,9 +20,9 @@ class MenuItem {
   final List<String> allergens;
   final int spiciness; // 0-3
 
-  // Nowa logika dostępności (Smart Menu)
-  final List<String> availabilityIds; // Zastępuje dayPeriods
-  final String? specialEventId;       // Opcjonalne powiązanie z eventem
+  // SMART MENU: Zastępuje stare dayPeriods
+  final List<String> availabilityIds;
+  final String? specialEventId;
 
   final List<String> tags;
   final Map<String, dynamic>? macros;
@@ -44,13 +52,12 @@ class MenuItem {
     this.updatedAt,
   });
 
-  // Factory constructor from Firestore
   factory MenuItem.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
     return MenuItem(
       id: doc.id,
-      restaurantId: data['restaurantId'] ?? '', // Fallback dla starych danych
+      restaurantId: data['restaurantId'] ?? '',
       name: Map<String, String>.from(data['name'] ?? {}),
       description: Map<String, String>.from(data['description'] ?? {}),
       price: (data['price'] ?? 0).toDouble(),
@@ -59,11 +66,8 @@ class MenuItem {
       calories: data['calories'],
       allergens: List<String>.from(data['allergens'] ?? []),
       spiciness: data['spiciness'] ?? 0,
-
-      // Migracja w locie: jeśli nie ma availabilityIds, sprawdź stare dayPeriods
       availabilityIds: List<String>.from(data['availabilityIds'] ?? data['dayPeriods'] ?? []),
       specialEventId: data['specialEventId'],
-
       tags: List<String>.from(data['tags'] ?? []),
       macros: data['macros'],
       isActive: data['isActive'] ?? true,
@@ -73,7 +77,6 @@ class MenuItem {
     );
   }
 
-  // Convert to Firestore document
   Map<String, dynamic> toFirestore() {
     return {
       'restaurantId': restaurantId,
@@ -96,7 +99,6 @@ class MenuItem {
     };
   }
 
-  // Copy with method
   MenuItem copyWith({
     String? id,
     String? restaurantId,
@@ -139,21 +141,10 @@ class MenuItem {
     );
   }
 
-  // Helper methods
-  String getName(String locale) {
-    if (name.isEmpty) return 'Unnamed Item';
-    return name[locale] ?? name['en'] ?? (name.values.isNotEmpty ? name.values.first : '');
-  }
+  String getName(String locale) => name[locale] ?? name['en'] ?? (name.values.isNotEmpty ? name.values.first : '');
+  String getDescription(String locale) => description[locale] ?? description['en'] ?? (description.values.isNotEmpty ? description.values.first : '');
 
-  String getDescription(String locale) {
-    if (description.isEmpty) return '';
-    return description[locale] ?? description['en'] ?? (description.values.isNotEmpty ? description.values.first : '');
-  }
-
-  bool hasTag(String tag) {
-    return tags.any((t) => t.toLowerCase().trim() == tag.toLowerCase().trim());
-  }
-
+  bool hasTag(String tag) => tags.any((t) => t.toLowerCase().trim() == tag.toLowerCase().trim());
   bool isVegan() => hasTag('vegan');
   bool isVegetarian() => hasTag('vegetarian');
   bool isGlutenFree() => hasTag('gluten-free');
@@ -161,16 +152,10 @@ class MenuItem {
   bool isSpicy() => spiciness > 0;
 
   String getSpicinessEmoji() {
-    switch (spiciness) {
-      case 1:
-        return '🌶️';
-      case 2:
-        return '🌶️🌶️';
-      case 3:
-        return '🌶️🌶️🌶️';
-      default:
-        return '';
-    }
+    if (spiciness == 1) return '🌶️';
+    if (spiciness == 2) return '🌶️🌶️';
+    if (spiciness >= 3) return '🌶️🌶️🌶️';
+    return '';
   }
 
   List<String> getDietaryIcons() {
@@ -183,25 +168,12 @@ class MenuItem {
     return icons;
   }
 
-  // Zaktualizowana logika sprawdzania dostępności
   bool isAvailableNow(String? currentAvailabilityId) {
-    if (availabilityIds.isEmpty || currentAvailabilityId == null) {
-      return true;
-    }
+    if (availabilityIds.isEmpty || currentAvailabilityId == null) return true;
     return availabilityIds.contains(currentAvailabilityId);
   }
 }
 
-// Sort options enum
-enum MenuItemSort {
-  name,
-  priceAsc,
-  priceDesc,
-  calories,
-  newest,
-}
-
-// Filter options
 class MenuItemFilter {
   final List<String> tags;
   final List<String> allergens;
@@ -211,7 +183,7 @@ class MenuItemFilter {
   final int? maxSpiciness;
   final String? searchQuery;
   final String? categoryId;
-  final String? availabilityId; // Zmieniono z dayPeriod
+  final String? availabilityId;
 
   MenuItemFilter({
     this.tags = const [],
@@ -226,49 +198,20 @@ class MenuItemFilter {
   });
 
   bool matches(MenuItem item, String locale) {
-    // Check tags
-    if (tags.isNotEmpty && !tags.every((tag) => item.hasTag(tag))) {
-      return false;
-    }
-
-    // Check allergens
-    if (allergens.isNotEmpty && allergens.any((allergen) => item.allergens.contains(allergen))) {
-      return false;
-    }
-
-    // Check price range
+    if (tags.isNotEmpty && !tags.every((tag) => item.hasTag(tag))) return false;
+    if (allergens.isNotEmpty && allergens.any((allergen) => item.allergens.contains(allergen))) return false;
     if (minPrice != null && item.price < minPrice!) return false;
     if (maxPrice != null && item.price > maxPrice!) return false;
+    if (maxCalories != null && item.calories != null && item.calories! > maxCalories!) return false;
+    if (maxSpiciness != null && item.spiciness > maxSpiciness!) return false;
+    if (categoryId != null && item.categoryId != categoryId) return false;
+    if (availabilityId != null && !item.isAvailableNow(availabilityId)) return false;
 
-    // Check calories
-    if (maxCalories != null && item.calories != null && item.calories! > maxCalories!) {
-      return false;
-    }
-
-    // Check spiciness
-    if (maxSpiciness != null && item.spiciness > maxSpiciness!) {
-      return false;
-    }
-
-    // Check search query
     if (searchQuery != null && searchQuery!.isNotEmpty) {
       final query = searchQuery!.toLowerCase();
       final name = item.getName(locale).toLowerCase();
       final description = item.getDescription(locale).toLowerCase();
-
-      if (!name.contains(query) && !description.contains(query)) {
-        return false;
-      }
-    }
-
-    // Check category
-    if (categoryId != null && item.categoryId != categoryId) {
-      return false;
-    }
-
-    // Check availability (day period / event)
-    if (availabilityId != null && !item.isAvailableNow(availabilityId)) {
-      return false;
+      if (!name.contains(query) && !description.contains(query)) return false;
     }
 
     return true;

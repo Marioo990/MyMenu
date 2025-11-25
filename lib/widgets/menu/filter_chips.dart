@@ -23,7 +23,6 @@ class FilterChips extends StatefulWidget {
 }
 
 class _FilterChipsState extends State<FilterChips> {
-  // Stała definiująca maksymalną cenę w suwaku
   static const double _maxPriceRange = 150.0;
 
   late Set<String> _selectedTags;
@@ -50,19 +49,15 @@ class _FilterChipsState extends State<FilterChips> {
   @override
   void didUpdateWidget(FilterChips oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // Inteligentne sprawdzanie zmian zewnętrznych
+    // Sprawdzanie zmian zewnętrznych (np. reset filtrów)
     bool tagsChanged = widget.filter.tags.length != oldWidget.filter.tags.length ||
         !widget.filter.tags.every((t) => oldWidget.filter.tags.contains(t));
-
     bool priceChanged = widget.filter.minPrice != oldWidget.filter.minPrice ||
         widget.filter.maxPrice != oldWidget.filter.maxPrice;
-
     bool otherChanged = widget.filter.maxCalories != oldWidget.filter.maxCalories ||
         widget.filter.maxSpiciness != oldWidget.filter.maxSpiciness;
 
     if (tagsChanged || priceChanged || otherChanged) {
-      print('♻️ [FilterChips] Zewnętrzna zmiana filtrów - aktualizuję widok');
       setState(() {
         _initializeState();
       });
@@ -70,25 +65,17 @@ class _FilterChipsState extends State<FilterChips> {
   }
 
   void _applyFilters() {
-    // Ustalanie wartości min/max. Jeśli suwak jest na skraju, wartość to null.
     final min = _priceRange.start > 0 ? _priceRange.start : null;
     final max = _priceRange.end < _maxPriceRange ? _priceRange.end : null;
 
-    print('🚀 [FilterChips] Zastosuj: Cena=$min-$max | Tagi=$_selectedTags');
-
     final newFilter = widget.filter.copyWith(
       tags: _selectedTags.toList(),
-
-      // Przekazywanie wartości
       minPrice: min,
       maxPrice: max,
-      // Wymuszenie resetu, jeśli wartość jest null (naprawa buga z "zacinaniem się" wartości)
       forceResetMinPrice: min == null,
       forceResetMaxPrice: max == null,
-
       maxCalories: _maxCalories,
       forceResetCalories: _maxCalories == null,
-
       maxSpiciness: _maxSpiciness,
       forceResetSpiciness: _maxSpiciness == null,
     );
@@ -113,41 +100,23 @@ class _FilterChipsState extends State<FilterChips> {
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: const BoxDecoration(
         color: AppTheme.backgroundColor,
-        border: Border(
-          bottom: BorderSide(color: AppTheme.textLight, width: 0.5),
-        ),
+        border: Border(bottom: BorderSide(color: AppTheme.textLight, width: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sort Options
           _buildSortSection(languageProvider),
-
           const SizedBox(height: AppTheme.spacingM),
           const Divider(),
           const SizedBox(height: AppTheme.spacingM),
-
-          // Dietary Tags
           _buildDietaryTags(languageProvider),
-
           const SizedBox(height: AppTheme.spacingM),
-
-          // Price Range
           _buildPriceRange(languageProvider),
-
           const SizedBox(height: AppTheme.spacingM),
-
-          // Calories Filter
           _buildCaloriesFilter(languageProvider),
-
           const SizedBox(height: AppTheme.spacingM),
-
-          // Spiciness Filter
           _buildSpicinessFilter(languageProvider),
-
           const SizedBox(height: AppTheme.spacingM),
-
-          // Action Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -171,39 +140,16 @@ class _FilterChipsState extends State<FilterChips> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          languageProvider.translate('sort'),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(languageProvider.translate('sort'), style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: AppTheme.spacingS),
         Wrap(
           spacing: AppTheme.spacingS,
           children: [
-            _buildSortChip(
-              MenuItemSort.name,
-              languageProvider.translate('name'),
-              Icons.sort_by_alpha,
-            ),
-            _buildSortChip(
-              MenuItemSort.priceAsc,
-              languageProvider.translate('price_low'),
-              Icons.arrow_upward,
-            ),
-            _buildSortChip(
-              MenuItemSort.priceDesc,
-              languageProvider.translate('price_high'),
-              Icons.arrow_downward,
-            ),
-            _buildSortChip(
-              MenuItemSort.calories,
-              languageProvider.translate('calories'),
-              Icons.local_fire_department,
-            ),
-            _buildSortChip(
-              MenuItemSort.newest,
-              languageProvider.translate('newest'),
-              Icons.new_releases,
-            ),
+            _buildSortChip(MenuItemSort.name, languageProvider.translate('name'), Icons.sort_by_alpha),
+            _buildSortChip(MenuItemSort.priceAsc, languageProvider.translate('price_low'), Icons.arrow_upward),
+            _buildSortChip(MenuItemSort.priceDesc, languageProvider.translate('price_high'), Icons.arrow_downward),
+            _buildSortChip(MenuItemSort.calories, languageProvider.translate('calories'), Icons.local_fire_department),
+            _buildSortChip(MenuItemSort.newest, languageProvider.translate('newest'), Icons.new_releases),
           ],
         ),
       ],
@@ -211,22 +157,14 @@ class _FilterChipsState extends State<FilterChips> {
   }
 
   Widget _buildSortChip(MenuItemSort sort, String label, IconData icon) {
-    final isSelected = widget.sortOption == sort;
-
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: AppTheme.spacingXS),
-          Text(label),
-        ],
+        children: [Icon(icon, size: 16), const SizedBox(width: AppTheme.spacingXS), Text(label)],
       ),
-      selected: isSelected,
+      selected: widget.sortOption == sort,
       onSelected: (selected) {
-        if (selected) {
-          widget.onSortChanged(sort);
-        }
+        if (selected) widget.onSortChanged(sort);
       },
       selectedColor: AppTheme.primaryColor.withOpacity(0.2),
       checkmarkColor: AppTheme.primaryColor,
@@ -237,10 +175,7 @@ class _FilterChipsState extends State<FilterChips> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          languageProvider.translate('dietary'),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(languageProvider.translate('dietary'), style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: AppTheme.spacingS),
         Wrap(
           spacing: AppTheme.spacingS,
@@ -250,10 +185,7 @@ class _FilterChipsState extends State<FilterChips> {
             _buildTagChip('vegetarian', '🥗 ${languageProvider.translate('vegetarian')}'),
             _buildTagChip('gluten-free', '🌾 ${languageProvider.translate('gluten_free')}'),
             _buildTagChip('dairy-free', '🥛 ${languageProvider.translate('dairy_free')}'),
-            _buildTagChip('high-protein', '💪 ${languageProvider.translate('high_protein')}'),
-            _buildTagChip('low-carb', '🍞 ${languageProvider.translate('low_carb')}'),
-            _buildTagChip('fish', '🐟 ${languageProvider.translate('fish')}'),
-            _buildTagChip('meat', '🥩 ${languageProvider.translate('meat')}'),
+            _buildTagChip('spicy', '🌶️ ${languageProvider.translate('spicy')}'),
           ],
         ),
       ],
@@ -261,18 +193,12 @@ class _FilterChipsState extends State<FilterChips> {
   }
 
   Widget _buildTagChip(String tag, String label) {
-    final isSelected = _selectedTags.contains(tag);
-
     return FilterChip(
       label: Text(label),
-      selected: isSelected,
+      selected: _selectedTags.contains(tag),
       onSelected: (selected) {
         setState(() {
-          if (selected) {
-            _selectedTags.add(tag);
-          } else {
-            _selectedTags.remove(tag);
-          }
+          selected ? _selectedTags.add(tag) : _selectedTags.remove(tag);
         });
       },
       selectedColor: AppTheme.secondaryColor.withOpacity(0.2),
@@ -284,10 +210,7 @@ class _FilterChipsState extends State<FilterChips> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          languageProvider.translate('price_range'),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(languageProvider.translate('price_range'), style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: AppTheme.spacingS),
         Row(
           children: [
@@ -297,16 +220,12 @@ class _FilterChipsState extends State<FilterChips> {
                 values: _priceRange,
                 min: 0,
                 max: _maxPriceRange,
-                divisions: 30, // 150 / 5 = 30 kroków (co 5zł)
+                divisions: 30,
                 labels: RangeLabels(
                   '${_priceRange.start.toStringAsFixed(0)} zł',
                   '${_priceRange.end.toStringAsFixed(0)} zł',
                 ),
-                onChanged: (values) {
-                  setState(() {
-                    _priceRange = values;
-                  });
-                },
+                onChanged: (values) => setState(() => _priceRange = values),
               ),
             ),
             Text('${_priceRange.end.toStringAsFixed(0)} zł'),
@@ -320,10 +239,7 @@ class _FilterChipsState extends State<FilterChips> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          languageProvider.translate('max_calories'),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(languageProvider.translate('max_calories'), style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: AppTheme.spacingS),
         Wrap(
           spacing: AppTheme.spacingS,
@@ -331,8 +247,7 @@ class _FilterChipsState extends State<FilterChips> {
             _buildCaloriesChip(null, languageProvider.translate('all')),
             _buildCaloriesChip(300, '< 300 kcal'),
             _buildCaloriesChip(500, '< 500 kcal'),
-            _buildCaloriesChip(700, '< 700 kcal'),
-            _buildCaloriesChip(1000, '< 1000 kcal'),
+            _buildCaloriesChip(800, '< 800 kcal'),
           ],
         ),
       ],
@@ -340,16 +255,10 @@ class _FilterChipsState extends State<FilterChips> {
   }
 
   Widget _buildCaloriesChip(int? calories, String label) {
-    final isSelected = _maxCalories == calories;
-
     return ChoiceChip(
       label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _maxCalories = selected ? calories : null;
-        });
-      },
+      selected: _maxCalories == calories,
+      onSelected: (selected) => setState(() => _maxCalories = selected ? calories : null),
       selectedColor: AppTheme.successColor.withOpacity(0.2),
     );
   }
@@ -358,10 +267,7 @@ class _FilterChipsState extends State<FilterChips> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          languageProvider.translate('spiciness'),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(languageProvider.translate('spiciness'), style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: AppTheme.spacingS),
         Wrap(
           spacing: AppTheme.spacingS,
@@ -378,16 +284,10 @@ class _FilterChipsState extends State<FilterChips> {
   }
 
   Widget _buildSpicinessChip(int? spiciness, String label) {
-    final isSelected = _maxSpiciness == spiciness;
-
     return ChoiceChip(
       label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _maxSpiciness = selected ? spiciness : null;
-        });
-      },
+      selected: _maxSpiciness == spiciness,
+      onSelected: (selected) => setState(() => _maxSpiciness = selected ? spiciness : null),
       selectedColor: AppTheme.warningColor.withOpacity(0.2),
     );
   }

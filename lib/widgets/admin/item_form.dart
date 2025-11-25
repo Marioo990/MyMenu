@@ -42,7 +42,7 @@ class _ItemFormState extends State<ItemForm> {
   String? _selectedCategoryId;
   final Set<String> _selectedTags = {};
   final Set<String> _selectedAllergens = {};
-  final Set<String> _selectedDayPeriods = {};
+  final Set<String> _selectedAvailabilityIds = {}; // NOWOŚĆ: Zamiast dayPeriods
   int _spiciness = 0;
   int _order = 0;
   bool _isActive = true;
@@ -57,12 +57,10 @@ class _ItemFormState extends State<ItemForm> {
     super.initState();
     final item = widget.item;
 
-    // Initialize language fields
-    final languages = ['en', 'pl']; // Główne języki
+    final languages = ['en', 'pl'];
     for (final lang in languages) {
       _nameControllers[lang] = TextEditingController(text: item?.name[lang] ?? '');
 
-      // Wyciąganie składników z opisu, jeśli istnieją
       String desc = item?.description[lang] ?? '';
       String ingredients = '';
       String separator = lang == 'pl' ? 'Składniki:' : 'Ingredients:';
@@ -88,7 +86,7 @@ class _ItemFormState extends State<ItemForm> {
     if (item != null) {
       _selectedTags.addAll(item.tags);
       _selectedAllergens.addAll(item.allergens);
-      _selectedDayPeriods.addAll(item.dayPeriods);
+      _selectedAvailabilityIds.addAll(item.availabilityIds); // Pobranie availabilityIds
     }
 
     if (item?.macros != null) {
@@ -100,7 +98,6 @@ class _ItemFormState extends State<ItemForm> {
 
   @override
   void dispose() {
-    // Clean up controllers
     for (var c in _nameControllers.values) c.dispose();
     for (var c in _descriptionControllers.values) c.dispose();
     for (var c in _ingredientsControllers.values) c.dispose();
@@ -128,7 +125,6 @@ class _ItemFormState extends State<ItemForm> {
   @override
   Widget build(BuildContext context) {
     final menuProvider = Provider.of<MenuProvider>(context);
-    // final languageProvider = Provider.of<LanguageProvider>(context); // Nieużywane
     final isEditing = widget.item != null;
 
     return Scaffold(
@@ -159,7 +155,6 @@ class _ItemFormState extends State<ItemForm> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Zdjęcie
                   InkWell(
                     onTap: _pickImage,
                     child: Container(
@@ -244,10 +239,26 @@ class _ItemFormState extends State<ItemForm> {
                 )).toList(),
               ),
 
+              // 4. Dostępność (Pory dnia) - NOWOŚĆ
+              const SizedBox(height: AppTheme.spacingL),
+              const Divider(),
+              _buildSectionHeader('Dostępność (Pory Dnia)'),
+              Wrap(
+                spacing: 8,
+                children: menuProvider.dayPeriods.map((period) {
+                  final periodId = period.id;
+                  return FilterChip(
+                    label: Text("${period.getDisplayIcon()} ${period.getName('pl')}"),
+                    selected: _selectedAvailabilityIds.contains(periodId),
+                    onSelected: (s) => setState(() => s ? _selectedAvailabilityIds.add(periodId) : _selectedAvailabilityIds.remove(periodId)),
+                  );
+                }).toList(),
+              ),
+
               const SizedBox(height: AppTheme.spacingL),
               const Divider(),
 
-              // 4. Wartości odżywcze
+              // 5. Wartości odżywcze
               _buildSectionHeader('Wartości odżywcze'),
               Row(
                 children: [
@@ -268,7 +279,7 @@ class _ItemFormState extends State<ItemForm> {
               const SizedBox(height: AppTheme.spacingL),
               const Divider(),
 
-              // 5. Ustawienia
+              // 6. Ustawienia
               _buildSectionHeader('Ustawienia'),
               Row(
                 children: [
@@ -332,7 +343,7 @@ class _ItemFormState extends State<ItemForm> {
               decoration: InputDecoration(
                 labelText: 'Składniki ($langCode) - opcjonalne',
                 prefixIcon: const Icon(Icons.list),
-                helperText: 'Będą wyświetlane w sekcji szczegółów', // Poprawione miejsce parametru helperText
+                helperText: 'Będą wyświetlane w sekcji szczegółów',
               ),
             ),
           ],
@@ -347,12 +358,19 @@ class _ItemFormState extends State<ItemForm> {
     setState(() => _isUploading = true);
 
     try {
+      // POBRANIE RESTAURANT ID Z PROVIDERA
+      final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+      final restaurantId = menuProvider.restaurantId;
+
+      if (restaurantId == null) throw Exception("Brak kontekstu restauracji! (restaurantId is null)");
+
       // 1. Upload image if new one selected
-      String? finalImageUrl = _imageUrl;
+      String? finalImageUrl = widget.item?.imageUrl; // Use existing if not changed
       if (_newImageBytes != null) {
         final firebaseService = Provider.of<FirebaseService>(context, listen: false);
-        final fileName = 'menu_items/${DateTime.now().millisecondsSinceEpoch}.jpg';
-        finalImageUrl = await firebaseService.uploadImage(fileName, _newImageBytes!);
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        // Upload do folderu konkretnej restauracji
+        finalImageUrl = await firebaseService.uploadImage(restaurantId, fileName, _newImageBytes!);
       }
 
       // 2. Prepare Data
@@ -363,7 +381,6 @@ class _ItemFormState extends State<ItemForm> {
         if (ctrl.text.isNotEmpty) nameMap[lang] = ctrl.text;
       });
 
-      // Combine description and ingredients
       _descriptionControllers.forEach((lang, ctrl) {
         String fullDesc = ctrl.text;
         String ingredients = _ingredientsControllers[lang]?.text ?? '';
@@ -384,6 +401,7 @@ class _ItemFormState extends State<ItemForm> {
       // 3. Create Object
       final item = MenuItem(
         id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        restaurantId: restaurantId,
         name: nameMap,
         description: descMap,
         price: double.tryParse(_priceController.text) ?? 0.0,
@@ -392,7 +410,7 @@ class _ItemFormState extends State<ItemForm> {
         calories: int.tryParse(_caloriesController.text),
         allergens: _selectedAllergens.toList(),
         spiciness: _spiciness,
-        dayPeriods: _selectedDayPeriods.toList(),
+        availabilityIds: _selectedAvailabilityIds.toList(), // NOWE POLE
         tags: _selectedTags.toList(),
         macros: macros.isNotEmpty ? macros : null,
         isActive: _isActive,
